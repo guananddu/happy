@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        .special {
+            width: 100px;
+            height: 100px;
+            background-color: green;
+        }
+        .container {
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="special"></div>
+    <div class="container">
+        <p>我是一个测试的段落</p>
+    </div>
+    <script>
+        var special = document.querySelector( '.special' );
+        special.innerHTML = '123';
+        special.style.color = 'white';
+    </script>
+</body>
+</html>
