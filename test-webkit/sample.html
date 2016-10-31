@@ -19,8 +19,22 @@
     <div id="container" class="container">
         <p>我是一个测试的段落</p>
     </div>
+    <div id="testquery" class="testquery">
+        这里是测试文字
+        <div class="innertestquery">
+            <span>里面的文字</span>
+            <span>里面的文字2</span>
+            <span>里面的文字3</span>
+        </div>
+    </div>
     <script>
+        // test 4 getElementById
         var $container = document.getElementById( 'container' );
+        // test 4 queryselector
+        var $firstSpan = document.querySelector( '.testquery .innertestquery span' );
+        // test 4 all
+        var $allSpan = document.querySelectorAll( '#testquery span' );
+        // test 4 innerHTML
         var special = document.querySelector( '.special' );
         special.innerHTML = '123';
         special.style.color = 'white';
