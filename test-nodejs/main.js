@@ -4,4 +4,6 @@
 // require( './module/mod' );
 
 // timers
-require( './timers/setImmediate' );
+// require( './timers/setImmediate' );
+
+require( './timers/setInterval' );
