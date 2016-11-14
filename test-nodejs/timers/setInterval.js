@@ -1,3 +1,4 @@
+debugger
 var timer = setInterval( function () {
 
     console.log( arguments );
