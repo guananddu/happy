@@ -6,4 +6,6 @@
 // timers
 // require( './timers/setImmediate' );
 
-require( './timers/setInterval' );
+// require( './timers/setInterval' );
+
+require( './timers/setTimeout' );

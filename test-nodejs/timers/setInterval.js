@@ -4,6 +4,8 @@ var timer = setInterval( function () {
     console.log( arguments );
 }, 2000, 'first', 123 );
 
+clearInterval( timer );
+
 debugger
 var timer2 = setInterval( function () {
     debugger
