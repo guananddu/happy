@@ -8,4 +8,7 @@
 
 // require( './timers/setInterval' );
 
-require( './timers/setTimeout' );
+// require( './timers/setTimeout' );
+
+// process.nextTick
+require( './nextTick/nextTick' );

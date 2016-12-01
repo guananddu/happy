@@ -1,8 +1,14 @@
 console.log('start');
-process.nextTick(() => {
-  console.log('nextTick callback');
-});
+debugger
+process.nextTick( () => {
+    debugger
+    console.log( 'nextTick callback' );
+} );
 console.log('scheduled');
+process.nextTick( () => {
+    debugger
+    console.log( 'nextTick 2 callback' )
+} );
 // Output:
 // start
 // scheduled
