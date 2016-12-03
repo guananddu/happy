@@ -6,5 +6,15 @@
 </head>
 <body>
     
+    <script>
+        function some_callback( data ) {
+            console.log( data );
+            alert( 'ready' );
+        }
+    </script>
+
+    <!-- jsonp 请求，就是一个script请求 -->
+    <!-- json with padding -->
+    <script src="http://127.0.0.1:8003/server/backend.php?a=1&b=3&cb=some_callback"></script>
 </body>
 </html>
