@@ -1,10 +1,16 @@
 console.log('start');
 
+debugger
+
 setTimeout( () => {
     console.log( 'setTimeout callback' );
+
+    process.nextTick( () => {
+        console.log( 'i am a inner nextTick callback!' );
+    } );
+
 }, 0 );
 
-debugger
 process.nextTick( () => {
     debugger
     console.log( 'nextTick callback' );
