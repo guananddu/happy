@@ -2,6 +2,6 @@
 
 module.exports = {
 
-	
+	version: ( Math.random() + '' ).substring( 2 )
 
 }

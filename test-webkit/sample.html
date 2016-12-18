@@ -13,8 +13,8 @@
             font-size: 20px;
         }
     </style>
-    <link href="style/outer1.css" rel="stylesheet" />
-    <link href="style/outer2.css" rel="stylesheet" />
+    <link href="style/outer1.css?{{ version }}" rel="stylesheet" />
+    <link href="style/outer2.css?{{ version }}" rel="stylesheet" />
 </head>
 <body>
     <div class="special"></div>
@@ -29,6 +29,7 @@
             <span>里面的文字3</span>
         </div>
     </div>
+    <img class="my-img" src="https://developers.google.com/web/fundamentals/performance/critical-rendering-path/images/render-tree-construction.png?hl=zh-cn" alt="">
     <script>
         // test 4 getElementById
         var $container = document.getElementById( 'container' );
@@ -41,6 +42,6 @@
         special.innerHTML = '123';
         special.style.color = 'white';
     </script>
-    <script src="script/outer.js"></script>
+    <script src="script/outer.js?{{ version }}"></script>
 </body>
 </html>

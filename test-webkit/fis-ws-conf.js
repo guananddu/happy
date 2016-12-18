@@ -37,7 +37,7 @@ module.exports = {
      * 在启用之前，请确保java环境，并且需要安装：http://fmpp.sourceforge.net/
      * https://www.npmjs.com/package/freemarker.js#readme
      */
-    tplEngine: 'velocity',
+    tplEngine: 'django',
 
     // 反向代理配置【按需配置】，键名可以随意，只要是每一个的匹配规则
     reverseProxyMap: {
