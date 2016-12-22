@@ -1,2 +1,3 @@
-# happy
-ooxx
+# happy project
+
+learning node.js and webkit...
