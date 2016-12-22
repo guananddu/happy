@@ -49,5 +49,6 @@ fis.set( 'project.ignore',
         'out/**',
         'build.sh',
         'node_modules',
-        'tool/**'
+        'tool/**',
+        'package.json'
     ] ) );
