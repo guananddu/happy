@@ -46,5 +46,6 @@ fis.media( 'local' ).match( '*.html', {
 fis.set( 'project.ignore',
     fis.get( 'project.ignore' ).concat( [
         'output/**',
-        'out/**'
+        'out/**',
+        'build.sh'
     ] ) );
