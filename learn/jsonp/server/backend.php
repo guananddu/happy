@@ -1,1 +1,0 @@
-some_callback('{ a:1,b:2 }')
