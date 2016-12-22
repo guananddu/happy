@@ -47,5 +47,7 @@ fis.set( 'project.ignore',
     fis.get( 'project.ignore' ).concat( [
         'output/**',
         'out/**',
-        'build.sh'
+        'build.sh',
+        'node_modules',
+        'tool/**'
     ] ) );
