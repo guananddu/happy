@@ -51,7 +51,7 @@
 </div>
 <div><br/></div>
 <div>因为在&lt;html&gt;之前，还有一个\u000A的字符，所以上面的状态转移流程是为此字符token的处理流程，先看调用栈截图：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/1119ECF5-D1B1-4FED-9059-512B39D6248B.png" height="332" width="1356"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/1119ECF5-D1B1-4FED-9059-512B39D6248B.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
 <div>可以确定，在 auto token = m_tokenizer.nextToken(m_input.current()); 运行完毕后，获取到了这样的token：</div>
@@ -253,8 +253,8 @@
 <hr/>
 <div>【附录1】</div>
 <div>对照ASCII码表，10也就是\u000A就是下面这位：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B448C293-8663-4C77-ACB5-0B07ED1AB96E.png" height="110" width="1794"/></div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/1FD4DA67-032E-427F-8B12-EF965E621D03.png" height="242" width="550"/> 美其名曰：换行符</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B448C293-8663-4C77-ACB5-0B07ED1AB96E.png" height="auto" width="100%"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/1FD4DA67-032E-427F-8B12-EF965E621D03.png" height="auto" width="100%"/> 美其名曰：换行符</div>
 <div><br/></div>
 <div>【附录2】</div>
 <div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
@@ -271,8 +271,8 @@
 </div>
 <div><br/></div>
 <div>【附录3】</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B11CB782-5218-4952-A764-B6224238062F.png" height="390" width="882"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B11CB782-5218-4952-A764-B6224238062F.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>【附录4】</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B95FC75E-F8D3-4F6C-9F5C-BCB1B6E72EEF.png" height="386" width="882"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20html.resources/B95FC75E-F8D3-4F6C-9F5C-BCB1B6E72EEF.png" height="auto" width="100%"/></div>
 </body></html>

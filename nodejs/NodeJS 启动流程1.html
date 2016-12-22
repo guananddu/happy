@@ -4,7 +4,7 @@
 <div>
 <div>NodeJs 鉴于其 单线程 的特点，启动流程比较简易：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/6A2C4E0B-B78F-47B5-A44A-0842817C96A8.png" height="162" width="524"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/6A2C4E0B-B78F-47B5-A44A-0842817C96A8.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>首先进入 main 函数：</div>
 <div><br/></div>
@@ -34,7 +34,7 @@
 </div>
 <div><br/></div>
 <div>有关 C 函数 setvbuf 的细节说明：Changes the the buffering mode of the given file stream stream as indicated by the argument mode。参数说明：</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5305B1D8-F1CB-42AB-8613-77FC7FD5EAC2.png" height="500" width="1486"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5305B1D8-F1CB-42AB-8613-77FC7FD5EAC2.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <hr/>
 <div>进入 node::Start:</div>
@@ -324,7 +324,7 @@
 <div><br/></div>
 <div>架构图：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/4E67F7A2-7EDD-4A47-AA1C-D757B1B54C16.png" height="493" width="1020"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/4E67F7A2-7EDD-4A47-AA1C-D757B1B54C16.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>
 <div style="font-family: Arial, sans-serif; background-color: rgb(200, 213, 227); font-weight: normal; color: rgb(33, 34, 36); padding: 5px 0px 5px 10px; text-shadow: white 0px 1px 0px; font-size: 22px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px;">
@@ -348,10 +348,10 @@
 <div>The event loop follows the rather usual single threaded asynchronous I/O approach: all (network) I/O is performed on non-blocking sockets which are polled using the best mechanism available on the given platform: epoll on Linux, kqueue on OSX and other BSDs, event ports on SunOS and IOCP on Windows. As part of a loop iteration the loop will block waiting for I/O activity on sockets which have been added to the poller and callbacks will be fired indicating socket conditions (readable, writable hangup) so handles can read, write or perform the desired I/O operation.</div>
 <div><br/></div>
 <div>In order to better understand how the event loop operates, the following diagram illustrates all stages of a loop iteration:</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B22B7DDB-A52E-44E9-8ECC-5754E99DD662.png" height="740" width="522"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/E31B2BC0-92D0-45B6-9DE0-9A69945F7C0F.png" height="1080" width="1852"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/98A2D0D9-BC6C-4852-AC79-CBF0C3FA1B03.png" height="1036" width="1872"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5AB5AABE-1451-4812-9EFF-7F1F72074468.png" height="1070" width="1910"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B069BE66-68AD-4F27-A0CF-3C7E71FC8B08.png" height="444" width="1902"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B22B7DDB-A52E-44E9-8ECC-5754E99DD662.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/E31B2BC0-92D0-45B6-9DE0-9A69945F7C0F.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/98A2D0D9-BC6C-4852-AC79-CBF0C3FA1B03.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5AB5AABE-1451-4812-9EFF-7F1F72074468.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B069BE66-68AD-4F27-A0CF-3C7E71FC8B08.png" height="auto" width="100%"/></div>
 <div>以上都是重要部分的截图，更加详细参看上方的官方链接信息。</div>
 </body></html>

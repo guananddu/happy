@@ -497,9 +497,9 @@
 <div><br/></div>
 <div>看下目前的调用栈截图：</div>
 <div>由JS调用引起的调用栈：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/8D374114-B5EF-44F1-BB77-157D40A3A75E.png" height="724" width="1928"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/8D374114-B5EF-44F1-BB77-157D40A3A75E.png" height="auto" width="100%"/></div>
 <div>script结束标签完成后，开始执行JS代码的调用栈：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/57E18747-6722-4A07-B0C2-FF5163CB7377.png" height="1286" width="1882"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/57E18747-6722-4A07-B0C2-FF5163CB7377.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>起初很好奇，为什么会被断点断住，就是因为JS代码中有：special.innerHTML = '123’; 此句代码，其实本质上修改了DOM树结构：</div>
 <div><br/></div>
@@ -519,7 +519,7 @@
 </div>
 <div><br/></div>
 <div>且，要设置的字符串，最终被append入一个documentFragment中：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/742489FE-60BB-4124-BEEC-EA4375986150.png" height="380" width="844"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/742489FE-60BB-4124-BEEC-EA4375986150.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>在innerHTML的解析过程中，会创建一个新的HTMLDocumentParser对象，其有自己的HTMLTreeBuilder，以及自己的TreeBuilder自己的m_openElements栈，最终片段解析器执行完毕：</div>
 <div><br/></div>
@@ -615,7 +615,7 @@
 <hr/></div>
 <div>【继续开始解析】</div>
 <div>Timer是什么？还没有搞清楚，但是可以通过断点发现，在某一个时刻，逻辑重启，先看下调用栈截图：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/EBD98428-95A8-49C7-BCAC-85EB61716965.png" height="828" width="1130"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/EBD98428-95A8-49C7-BCAC-85EB61716965.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
 <div>#1    0x000000010762e776 in WebCore::HTMLParserScheduler::continueNextChunkTimerFired() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLParserScheduler.cpp:107</div>

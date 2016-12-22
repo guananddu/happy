@@ -135,13 +135,13 @@
 <div><br/></div>
 <div>from：<a href="http://blog.csdn.net/sjin_1314/article/details/10934239">http://blog.csdn.net/sjin_1314/article/details/10934239</a></div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/7DE2D873-1F2E-4653-B50B-FF84B2DEB1F4.png" height="732" width="1906"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/7DE2D873-1F2E-4653-B50B-FF84B2DEB1F4.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>
 <hr/></div>
 <div>看 uv__signal_global_init 函数的执行调用栈：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/21D82A38-2806-4F0B-A28D-00DC80A14A12.png" height="456" width="502"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/21D82A38-2806-4F0B-A28D-00DC80A14A12.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>具体 uv__signal_global_init 做了些什么，实在太烧脑和底层，暂时不深究了。</div>
 <div><br/></div>
@@ -178,8 +178,8 @@
 <div><br/></div>
 <div>从：<a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0348bc/Cacghbaa.html">http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0348bc/Cacghbaa.html</a> 这个网站山找到了其解释：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/65FE7003-CF63-451F-9019-F7468028F33B.png" height="528" width="1786"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/BA0D653F-7181-41E1-A6EF-66B87140EF8B.png" height="374" width="1794"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/65FE7003-CF63-451F-9019-F7468028F33B.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/BA0D653F-7181-41E1-A6EF-66B87140EF8B.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>用在此处，即：定义好的 heap_init 函数可能不会用到，请不要发出警告。</div>
 <div><br/></div>
@@ -358,7 +358,7 @@
 <div><br/></div>
 <div>关于 uv__hrtime 仍旧是使用 mac( darwin ) 的机制通过获取 CPU 始终嘀嗒数来测量精确的时间，在 WebKit 源代码分析中也有相关解释，以下为截图：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/75277BE5-FB9E-4A27-8559-3677B2120F90.png" height="1146" width="1664"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/75277BE5-FB9E-4A27-8559-3677B2120F90.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>lib_uv 这样使用，只列举程式，不过多解释了：</div>
 <div><br/></div>
@@ -495,7 +495,7 @@
 </div>
 <div><br/></div>
 <div>关于 ioctl 函数：<a href="http://blog.csdn.net/z1179675084/article/details/8854188">http://blog.csdn.net/z1179675084/article/details/8854188</a>，从此文章中可以获悉：</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/A51185D7-5B46-4AC6-8728-B3C965E68B5D.png" height="100" width="1496"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/A51185D7-5B46-4AC6-8728-B3C965E68B5D.png" height="auto" width="100%"/></div>
 <div>最终 uv__platform_loop_init 函数调用完毕，主要就是初始化 kqueue 队列，并将其 fd 存储至：loop-&gt;backend_fd 中。</div>
 <div><br/></div>
 <div>
@@ -580,7 +580,7 @@
 <div><br/></div>
 <div>关于 pipe 函数：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/8BE53E15-791C-4ADC-98A9-30BE31398D58.png" height="786" width="1628"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/8BE53E15-791C-4ADC-98A9-30BE31398D58.png" height="auto" width="100%"/></div>
 </div>
 <div><br/></div>
 <div>
@@ -772,15 +772,15 @@
 <div><br/></div>
 <div>关于 next_power_of_two ，power 是幂的意思：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/1D1C28DC-9603-4C46-A42C-F6F757DA84C4.png" height="444" width="1282"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/1D1C28DC-9603-4C46-A42C-F6F757DA84C4.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>有关 realloc 函数：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/F82600FD-BD32-42F5-9DF2-932EA40686FD.png" height="1310" width="2046"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/F82600FD-BD32-42F5-9DF2-932EA40686FD.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>例程：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/EF623CAF-B40C-4A17-BD23-9ABEF1B44DAE.png" height="1324" width="2022"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/EF623CAF-B40C-4A17-BD23-9ABEF1B44DAE.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>下文吧，这篇太大了。</div>
 </body></html>

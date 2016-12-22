@@ -50,8 +50,8 @@
 </div>
 <div><br/></div>
 <div>打入适当断点，我们先记录一下现在的深层调用栈：</div>
-<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/FBBCC2B1-98C8-4E6F-8B0D-1BAB5673F52A.png" height="1254" width="1930"/></div>
-<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/34B1C496-856B-4E94-A288-EE1CC1FD3FF7.png" height="410" width="1910"/></div>
+<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/FBBCC2B1-98C8-4E6F-8B0D-1BAB5673F52A.png" height="auto" width="100%"/></div>
+<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/34B1C496-856B-4E94-A288-EE1CC1FD3FF7.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>可见从，C++层面调用js的vm虚拟机，又到最终调用回C++中间经历了“汇编阶段”，以现在的能力没法分析，我们直接看调回C++的位置：</div>
 <div><br/></div>
@@ -218,5 +218,5 @@
 </div>
 <div><br/></div>
 <div>至于 DocumentOrderedMap 的 m_map 是什么时候被“塞”入元素的，应该是在DOM树构建阶段【猜测】，这里不再深究。附加调用堆栈：</div>
-<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/694FB86C-1EE9-432E-8953-31984CA2FCE5.png" height="254" width="1502"/></div>
+<div><img src="%E5%90%84%E7%A7%8D%E9%80%89%E6%8B%A9%E5%99%A8%E4%BB%A3%E7%A0%81%E5%88%86%E6%9E%901%20-getElementById.resources/694FB86C-1EE9-432E-8953-31984CA2FCE5.png" height="auto" width="100%"/></div>
 </body></html>

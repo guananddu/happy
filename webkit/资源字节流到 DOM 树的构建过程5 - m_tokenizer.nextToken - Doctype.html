@@ -552,7 +552,7 @@
 <div>StyleChangeMask = 1 &lt;&lt; nodeStyleChangeShift | 1 &lt;&lt; (nodeStyleChangeShift + 1) | 1 &lt;&lt; (nodeStyleChangeShift + 2)</div>
 <div>且：const int nodeStyleChangeShift = 14;</div>
 <div>即：StyleChangeMask = 114688；// 这个 114688 是个何许人，转化成二进制可以看到此掩码的真实模样：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20Doctype.resources/4ACB7C41-05B5-463A-88CB-3C863ACEA5E7.png" height="334" width="790"/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20Doctype.resources/4ACB7C41-05B5-463A-88CB-3C863ACEA5E7.png" height="auto" width="100%"/></div>
 <div>即：第14～16位即为 StyleChangeMask 的掩码位置，再看：</div>
 <div>enum StyleChangeType { </div>
 <div>    NoStyleChange = 0, </div>

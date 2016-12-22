@@ -32,7 +32,7 @@
 <div><br/></div>
 <div>maybe_resize 函数执行完毕，信息截图：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/6F19A8DD-F186-4A9B-BB89-C775F14A0A84.png" height="736" width="918"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/6F19A8DD-F186-4A9B-BB89-C775F14A0A84.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>但是，一曲终了，这个 maybe_resize 的作用是什么呢？？从最后两行可以推算，只是再次确认：</div>
 <div><br/></div>
@@ -93,8 +93,8 @@
 </div>
 <div><br/></div>
 <div>运行完毕后：</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/53E7AD78-D092-47BB-BC37-E8FD0F64E391.png" height="404" width="1108"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/33EEDAC2-D93D-4DC6-B110-2A30670F6F8D.png" height="324" width="970"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/53E7AD78-D092-47BB-BC37-E8FD0F64E391.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/33EEDAC2-D93D-4DC6-B110-2A30670F6F8D.png" height="auto" width="100%"/></div>
 <div><br/></div>
 <div>uv_signal_loop_once_init 函数的作用：</div>
 <div>在 loop-&gt;signal_pipefd 中创建读写管道，初始化 loop-&gt;signal_io_watcher 并且挂载其回调函数，存储管道的读入描述符；最后初始化 loop 的 watcher_queue 双向链表队列，将 loop-&gt;signal_io_watcher 追加入 loop 的 watcher_queue 双向链表； 更新 loop-&gt;watchers 数组，以管道读入描述符为数组索引存储 watcher，最后增加 loop-&gt;nfds 计数。</div>
