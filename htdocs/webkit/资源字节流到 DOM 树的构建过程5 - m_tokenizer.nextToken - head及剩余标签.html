@@ -1,0 +1,703 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-27 06:20:41 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-27 13:28:51 +0000"/><title>资源字节流到 DOM 树的构建过程5 - m_tokenizer.nextToken - head及剩余标签</title></head><body>
+<div>
+<div>
+<div>前面分析了html的开始标签的处理流程，具体的细节token处理，不再赘述，直接看token被抽取出来的时候，做的工作：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>if (token.name() == headTag) {</div>
+<div>    // 执行插入【并没有太多不同】</div>
+<div>    m_tree.insertHTMLHeadElement(token);</div>
+<div>    // 标记当前的插入状态</div>
+<div>    m_insertionMode = InsertionMode::InHead;</div>
+<div>    return;</div>
+<div>}</div>
+<div>// 值得注意的是：</div>
+<div>this    WebCore::HTMLTreeBuilder *    0x120adfde0    0x0000000120adfde0</div>
+<div>     m_tree    WebCore::HTMLConstructionSite  </div>
+<div>          m_openElements    WebCore::HTMLElementStack    </div>
+<div>---</div>
+<div>关于：</div>
+<div>m_openElements    WebCore::HTMLElementStack     </div>
+<div>其深度会随着遇到的开始标签，插入节点，追加入队列而不断增加，插入完head节点后：</div>
+<div>m_top    std::__1::unique_ptr&lt;WebCore::HTMLElementStack::ElementRecord, std::__1::default_delete&lt;WebCore::HTMLElementStack::ElementRecord&gt; &gt;   【栈顶元素，即接下来要处理的节点】</div>
+<div>m_rootNode    WebCore::HTMLHtmlElement *    0x120a87340    0x0000000120a87340</div>
+<div>m_headElement    WebCore::HTMLHeadElement *    0x120a873a8    0x0000000120a873a8</div>
+<div>m_bodyElement    WebCore::Element *    NULL    0x0000000000000000</div>
+<div>m_stackDepth    unsigned int    2【深度为2】</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【meta标签】</div>
+<div>最终会执行到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768c6be in WebCore::HTMLTreeBuilder::processStartTagForInHead(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2640</div>
+<div>
+<div>bool HTMLTreeBuilder::processStartTagForInHead(AtomicHTMLToken&amp; token)</div>
+<div>{</div>
+<div>    ASSERT(token.type() == HTMLToken::StartTag);</div>
+<div>    if (token.name() == htmlTag) {</div>
+<div>        processHtmlStartTagForInBody(token);</div>
+<div>        return true;</div>
+<div>    }</div>
+<div>    if (token.name() == baseTag</div>
+<div>        || token.name() == basefontTag</div>
+<div>        || token.name() == bgsoundTag</div>
+<div>        || token.name() == commandTag</div>
+<div>        || token.name() == linkTag</div>
+</div>
+<div>        || token.name() == metaTag) {</div>
+<div>        // 这些标签都是自闭合标签</div>
+<div>
+<div>        m_tree.insertSelfClosingHTMLElement(token);</div>
+<div>        // Note: The custom processing for the &lt;meta&gt; tag is done in HTMLMetaElement::process().</div>
+<div>        return true;</div>
+</div>
+<div>    }</div>
+<div>...</div>
+<div>---</div>
+<div>有关自闭合标签的标准：</div>
+<div>// FIXME: Do we want to acknowledge the token's self-closing flag?</div>
+<div>// <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/tokenization.html#acknowledge-self-closing-flag">http://www.whatwg.org/specs/web-apps/current-work/multipage/tokenization.html#acknowledge-self-closing-flag</a></div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【title标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768c7c5 in WebCore::HTMLTreeBuilder::processStartTagForInHead(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2651</div>
+<div>
+<div>void HTMLTreeBuilder::processGenericRCDATAStartTag(AtomicHTMLToken&amp; token)</div>
+<div>{</div>
+</div>
+<div>    ASSERT(token.type() == HTMLToken::StartTag);</div>
+<div>    // 新建的title节点插入任务，append进队列</div>
+<div>
+<div>    m_tree.insertHTMLElement(token);</div>
+</div>
+<div>    m_parser.tokenizer().setRCDATAState();</div>
+<div>    // 原来的插入模式</div>
+<div>    m_originalInsertionMode = m_insertionMode;</div>
+<div>    // 修改此时的插入模式</div>
+<div>
+<div>    m_insertionMode = InsertionMode::Text;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【title中的文字】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768a1c2 in WebCore::HTMLTreeBuilder::processCharacterBuffer(WebCore::HTMLTreeBuilder::ExternalCharacterTokenBuffer&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2437</div>
+<div>// 插入文本节点！！！</div>
+<div>#0    0x0000000107543080 in WebCore::HTMLConstructionSite::insertTextNode(WTF::String const&amp;, WebCore::WhitespaceMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:554</div>
+<div>===</div>
+<div>★ 有关如何插入文本节点，参见代码：</div>
+<div>
+<div>void HTMLConstructionSite::insertTextNode(const String&amp; characters, WhitespaceMode whitespaceMode)</div>
+</div>
+<div>{</div>
+<div>    // 创建插入任务</div>
+<div>    HTMLConstructionSiteTask task(HTMLConstructionSiteTask::Insert);</div>
+<div>    // currentNode() 会返回m_openElements  WebCore::HTMLElementStack栈中的栈顶元素【也就是当前节点】</div>
+<div>    // 在这里是title节点</div>
+<div>    // parent    WTF::RefPtr&lt;WebCore::ContainerNode&gt;   m_ptr    WebCore::HTMLTitleElement *    0x120ae0168    0x0000000120ae0168 </div>
+<div>
+<div>    task.parent = &amp;currentNode();</div>
+<div><br/></div>
+<div>    if (shouldFosterParent())</div>
+<div>        findFosterSite(task);</div>
+<div><br/></div>
+<div>    if (is&lt;HTMLTemplateElement&gt;(*task.parent))</div>
+<div>        task.parent = downcast&lt;HTMLTemplateElement&gt;(*task.parent).content();</div>
+<div><br/></div>
+<div>    // Strings composed entirely of whitespace are likely to be repeated.</div>
+<div>    // Turn them into AtomicString so we share a single string for each.</div>
+<div>    bool shouldUseAtomicString = whitespaceMode == AllWhitespace || (whitespaceMode == WhitespaceUnknown &amp;&amp; isAllWhitespace(characters));</div>
+<div><br/></div>
+</div>
+<div>    unsigned currentPosition = 0;</div>
+<div>    // lengthLimit    unsigned int    65536【最大限制】</div>
+<div>
+<div>    unsigned lengthLimit = shouldUseLengthLimit(*task.parent) ? Text::defaultLengthLimit : std::numeric_limits&lt;unsigned&gt;::max();</div>
+<div><br/></div>
+<div>    // FIXME: Splitting text nodes into smaller chunks contradicts HTML5 spec, but is currently necessary</div>
+<div>    // for performance, see &lt;https://bugs.webkit.org/show_bug.cgi?id=55898&gt;.</div>
+<div><br/></div>
+<div>    Node* previousChild = task.nextChild ? task.nextChild-&gt;previousSibling() : task.parent-&gt;lastChild();</div>
+<div>    if (is&lt;Text&gt;(previousChild)) {</div>
+<div>        // FIXME: We're only supposed to append to this text node if it</div>
+<div>        // was the last text node inserted by the parser.</div>
+<div>        currentPosition = downcast&lt;Text&gt;(*previousChild).parserAppendData(characters, 0, lengthLimit);</div>
+<div>    }</div>
+<div><br/></div>
+<div>    while (currentPosition &lt; characters.length()) {</div>
+<div>        auto textNode = Text::createWithLengthLimit(task.parent-&gt;document(), shouldUseAtomicString ? AtomicString(characters).string() : characters, currentPosition, lengthLimit);</div>
+<div>        // If we have a whole string of unbreakable characters the above could lead to an infinite loop. Exceeding the length limit is the lesser evil.</div>
+<div>        if (!textNode-&gt;length()) {</div>
+<div>            String substring = characters.substring(currentPosition);</div>
+<div>            textNode = Text::create(task.parent-&gt;document(), shouldUseAtomicString ? AtomicString(substring).string() : substring);</div>
+<div>        }</div>
+<div><br/></div>
+<div>        currentPosition += textNode-&gt;length();</div>
+<div>        ASSERT(currentPosition &lt;= characters.length());</div>
+<div>        task.child = WTFMove(textNode);</div>
+<div><br/></div>
+<div>        executeTask(task);</div>
+<div>    }</div>
+<div>}</div>
+</div>
+<div>===</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【title的endTag &lt;/title&gt;】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768898e in WebCore::HTMLTreeBuilder::processEndTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2120</div>
+<div>    ...</div>
+<div>    case InsertionMode::Text:</div>
+<div>        … // script 处理</div>
+<div>        m_tree.openElements().pop();</div>
+<div>        // 恢复为上一次的插入模式</div>
+<div>
+<div>        m_insertionMode = m_originalInsertionMode;</div>
+</div>
+<div>        break;</div>
+<div>    ...</div>
+<div>上述pop函数是为 openElements 栈做弹栈工作，因为 title 节点已经处理完了：</div>
+<div>
+<div>void HTMLElementStack::popCommon()</div>
+</div>
+<div>{</div>
+<div>    // 下列几个元素可能是不能被弹栈的</div>
+<div>
+<div>    ASSERT(!topStackItem().hasTagName(HTMLNames::htmlTag));</div>
+<div>    ASSERT(!topStackItem().hasTagName(HTMLNames::headTag) || !m_headElement);</div>
+</div>
+<div>    ASSERT(!topStackItem().hasTagName(HTMLNames::bodyTag) || !m_bodyElement);</div>
+<div>    // 当前活动元素结束解析子节点【细节不赘述】</div>
+<div>    top().finishParsingChildren();</div>
+<div>    // m_top 始终指向栈顶；释放栈顶并且m_top变成上一个元素</div>
+<div>
+<div>    m_top = m_top-&gt;releaseNext();</div>
+<div><br/></div>
+</div>
+<div>    --m_stackDepth;</div>
+<div>    // this    WebCore::HTMLElementStack *    0x120adfe20    0x0000000120adfe20</div>
+<div>    //     m_top    std::__1::unique_ptr&lt;WebCore::HTMLElementStack::ElementRecord, std::__1::default_delete&lt;WebCore::HTMLElementStack::ElementRecord&gt; &gt;  </div>
+<div>    //          m_node    const WTF::Ref&lt;WebCore::ContainerNode&gt;    m_ptr    WebCore::HTMLHeadElement *    0x120a873a8    0x0000000120a873a8【恢复为head元素】 </div>
+<div>    // m_stackDepth    unsigned int    2【由3-&gt;2】</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【style元素】</div>
+<div><br/></div>
+<div>处理token style开始标签，也会处理“\n ”的过程，会作为普通文本节点插入，这里不再赘述。</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768c84f in WebCore::HTMLTreeBuilder::processStartTagForInHead(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2663</div>
+<div><br/></div>
+<div>
+<div>void HTMLTreeBuilder::processGenericRawTextStartTag(AtomicHTMLToken&amp; token)</div>
+<div>{</div>
+</div>
+<div>    ASSERT(token.type() == HTMLToken::StartTag);</div>
+<div>    // 新建style节点，并且新建任务插入任务队列，并且推入openElements栈，增加其深度并且设置其m_top指向</div>
+<div>
+<div>    m_tree.insertHTMLElement(token);</div>
+</div>
+<div>    m_parser.tokenizer().setRAWTEXTState();</div>
+<div>    m_originalInsertionMode = m_insertionMode;</div>
+<div>    // 更正插入模式</div>
+<div>
+<div>    m_insertionMode = InsertionMode::Text;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【style中的样式字符串】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001075434ba in WebCore::HTMLConstructionSite::insertTextNode(WTF::String const&amp;, WebCore::WhitespaceMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:592</div>
+<div><br/></div>
+<div>之后会把style之间的样式字符串作为普通文本节点来插入DOM树</div>
+<div>task    WebCore::HTMLConstructionSiteTask  </div>
+<div>parent    WTF::RefPtr&lt;WebCore::ContainerNode&gt;    m_ptr    WebCore::HTMLStyleElement *    0x120ac9720    0x0000000120ac9720</div>
+<div>child    WTF::RefPtr&lt;WebCore::Node&gt;    m_ptr    WebCore::Text *    0x1154177d0    0x00000001154177d0</div>
+<div>     m_data8    const LChar *    "\n        .special {\n            width: 100px;\n            height: 100px;\n            background-color: green;\n        }\n        .container {\n            font-size: 20px;\n        }\n    "    0x0000000120b7a354 </div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【style结束标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>m_tree.openElements().pop();</div>
+<div>m_insertionMode = m_originalInsertionMode;</div>
+<div>---</div>
+<div>此两句的执行不再赘述</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【head结束标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000107688104 in WebCore::HTMLTreeBuilder::processEndTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:1993</div>
+<div>...</div>
+<div>if (token.name() == headTag) {</div>
+<div>    // 将 m_headElement 置为空且执行popCommon方法</div>
+<div>    m_tree.openElements().popHTMLHeadElement();</div>
+<div>    // 更新节点插入模式【状态】</div>
+<div>    m_insertionMode = InsertionMode::AfterHead;</div>
+<div>    return;</div>
+<div>}</div>
+<div>...</div>
+<div>
+<div>void HTMLElementStack::popHTMLHeadElement()</div>
+<div>{</div>
+<div>    ASSERT(&amp;top() == m_headElement);</div>
+<div>    m_headElement = nullptr;</div>
+<div>    popCommon();</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【body标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001076864dc in WebCore::HTMLTreeBuilder::processStartTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:1103</div>
+<div>...</div>
+<div>if (token.name() == bodyTag) {</div>
+<div>    m_framesetOk = false;</div>
+<div>    // 此函数并没有什么特殊之处</div>
+<div>    m_tree.insertHTMLBodyElement(token);</div>
+<div>    // 更新状态</div>
+<div>    m_insertionMode = InsertionMode::InBody;</div>
+<div>    return;</div>
+<div>}</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【script标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x000000010768abd8 in WebCore::HTMLTreeBuilder::processStartTagForInBody(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:608</div>
+<div>...</div>
+<div>
+<div>    if (token.name() == baseTag</div>
+<div>        || token.name() == basefontTag</div>
+<div>        || token.name() == bgsoundTag</div>
+<div>        || token.name() == commandTag</div>
+<div>        || token.name() == linkTag</div>
+<div>        || token.name() == metaTag</div>
+<div>        || token.name() == noframesTag</div>
+<div>        || token.name() == scriptTag</div>
+<div>        || token.name() == styleTag</div>
+</div>
+<div>        || token.name() == titleTag) {</div>
+<div>        // 跳转到这个函数来执行</div>
+<div>
+<div>        bool didProcess = processStartTagForInHead(token);</div>
+<div>        ASSERT_UNUSED(didProcess, didProcess);</div>
+<div>        return;</div>
+<div>    }</div>
+</div>
+<div>...</div>
+<div>===</div>
+<div>★ start 开始标签：</div>
+<div>#0    0x000000010768c8aa in WebCore::HTMLTreeBuilder::processStartTagForInHead(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2667</div>
+<div>#0    0x0000000107690688 in WebCore::HTMLTreeBuilder::processScriptStartTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2705</div>
+<div>...</div>
+<div>
+<div>void HTMLTreeBuilder::processScriptStartTag(AtomicHTMLToken&amp; token)</div>
+</div>
+<div>{</div>
+<div>    // 主要是一些状态的标记</div>
+<div>
+<div>    ASSERT(token.type() == HTMLToken::StartTag);</div>
+<div>    m_tree.insertScriptElement(token);</div>
+<div>    m_parser.tokenizer().setScriptDataState();</div>
+<div>    m_originalInsertionMode = m_insertionMode;</div>
+<div><br/></div>
+<div>    TextPosition position = m_parser.textPosition();</div>
+<div><br/></div>
+<div>    m_scriptToProcessStartPosition = position;</div>
+<div><br/></div>
+<div>    m_insertionMode = InsertionMode::Text;</div>
+<div>}</div>
+</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【script中的文本】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>普通的文本节点插入操作，不再赘述</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【script结束标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010768884a in WebCore::HTMLTreeBuilder::processEndTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2106</div>
+<div>// 在处理script的结束标签时，有一些特殊处理：</div>
+<div>...</div>
+<div>
+<div>    case InsertionMode::Text:</div>
+<div>        if (token.name() == scriptTag) {</div>
+<div>            // Pause ourselves so that parsing stops until the script can be processed by the caller.</div>
+<div>            ASSERT(m_tree.currentStackItem().hasTagName(scriptTag));</div>
+</div>
+<div>            if (scriptingContentIsAllowed(m_tree.parserContentPolicy()))</div>
+<div>                // 指向当前正在处理的script节点</div>
+<div>                m_scriptToProcess = &amp;m_tree.currentElement();</div>
+<div>            // 弹栈</div>
+<div>            m_tree.openElements().pop();</div>
+<div>            // 更新插入模式</div>
+<div>
+<div>            m_insertionMode = m_originalInsertionMode;</div>
+<div><br/></div>
+<div>            // This token will not have been created by the tokenizer if a</div>
+<div>            // self-closing script tag was encountered and pre-HTML5 parser</div>
+<div>            // quirks are enabled. We must set the tokenizer's state to</div>
+<div>            // DataState explicitly if the tokenizer didn't have a chance to.</div>
+<div>            ASSERT(m_parser.tokenizer().isInDataState() || m_options.usePreHTML5ParserQuirks);</div>
+<div>            m_parser.tokenizer().setDataState();</div>
+<div>            return;</div>
+<div>        }</div>
+<div>        m_tree.openElements().pop();</div>
+<div>        m_insertionMode = m_originalInsertionMode;</div>
+<div>        break;</div>
+</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>上述节点script结束标签处理完毕，当再次进入：</div>
+<div>#0    0x000000010756f367 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:229</div>
+<div>// 此函数时：</div>
+<div>
+<div>bool HTMLDocumentParser::pumpTokenizerLoop(SynchronousMode mode, bool parsingFragment, PumpSession&amp; session)</div>
+<div>{</div>
+</div>
+<div>    do {</div>
+<div>        // 这里返回true</div>
+<div>        if (UNLIKELY(isWaitingForScripts())) {</div>
+<div>            // 进入分支</div>
+<div>            // mode    WebCore::HTMLDocumentParser::SynchronousMode    AllowYield</div>
+<div>            // parsingFragment    bool    false</div>
+<div>            // 这里的分支不执行</div>
+<div>
+<div>            if (mode == AllowYield &amp;&amp; m_parserScheduler-&gt;shouldYieldBeforeExecutingScript(session))</div>
+</div>
+<div>                return true;</div>
+<div>            // 进入此流程</div>
+<div>
+<div>            runScriptsForPausedTreeBuilder();</div>
+<div>            // If we're paused waiting for a script, we try to execute scripts before continuing.</div>
+<div>            if (isWaitingForScripts() || isStopped())</div>
+<div>                return false;</div>
+</div>
+<div>        }</div>
+<div>...</div>
+<div>===</div>
+<div>★ 开始执行js：</div>
+<div>#0    0x000000010756f1d7 in WebCore::HTMLDocumentParser::runScriptsForPausedTreeBuilder() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:212</div>
+<div>...</div>
+<div>
+<div>    TextPosition scriptStartPosition = TextPosition::belowRangePosition();</div>
+<div>    if (auto scriptElement = m_treeBuilder-&gt;takeScriptToProcess(scriptStartPosition)) {</div>
+</div>
+<div>        ASSERT(!m_treeBuilder-&gt;hasParserBlockingScriptWork());</div>
+<div>        // this    WebCore::HTMLDocumentParser *    0x1165d4400    0x00000001165d4400</div>
+<div>        //      m_scriptRunner    std::__1::unique_ptr&lt;WebCore::HTMLScriptRunner, std::__1::default_delete&lt;WebCore::HTMLScriptRunner&gt; &gt;   </div>
+<div>        // scriptStartPosition    WTF::TextPosition  </div>
+<div>        //      m_line    WTF::OrdinalNumber    m_zeroBasedValue    int    21</div>
+<div>        //      m_column    WTF::OrdinalNumber    m_zeroBasedValue    int    12 </div>
+<div>        // scriptElement    WTF::RefPtr&lt;WebCore::Element&gt;   m_ptr    WebCore::HTMLScriptElement *    0x120ac9a18    0x0000000120ac9a18 </div>
+<div>
+<div>        // We will not have a scriptRunner when parsing a DocumentFragment.</div>
+</div>
+<div>        if (m_scriptRunner)</div>
+<div>            // 最终走入这里</div>
+<div>
+<div>            m_scriptRunner-&gt;execute(scriptElement.release(), scriptStartPosition);</div>
+<div>    }</div>
+<div>}</div>
+</div>
+<div>===</div>
+<div>★ WebCore::HTMLScriptRunner::execute</div>
+<div>#1    0x00000001076476ca in WebCore::HTMLScriptRunner::execute(WTF::PassRefPtr&lt;WebCore::Element&gt;, WTF::TextPosition const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLScriptRunner.cpp:175</div>
+<div>// This function should match 10.2.5.11 "An end tag whose tag name is 'script'"</div>
+<div>// Script handling lives outside the tree builder to keep the each class simple.【script的执行应该和dom的构建保持分离】</div>
+<div>
+<div>void HTMLScriptRunner::execute(PassRefPtr&lt;Element&gt; scriptElement, const TextPosition&amp; scriptStartPosition)</div>
+<div>{</div>
+<div>    ASSERT(scriptElement);</div>
+<div>    // FIXME: If scripting is disabled, always just return.</div>
+<div><br/></div>
+<div>    bool hadPreloadScanner = m_host.hasPreloadScanner();</div>
+<div><br/></div>
+<div>    // Try to execute the script given to us.</div>
+<div>    runScript(scriptElement.get(), scriptStartPosition);</div>
+<div><br/></div>
+<div>    if (hasParserBlockingScript()) {</div>
+<div>        if (isExecutingScript())</div>
+<div>            return; // Unwind to the outermost HTMLScriptRunner::execute before continuing parsing.</div>
+<div>        // If preload scanner got created, it is missing the source after the current insertion point. Append it and scan.</div>
+<div>        if (!hadPreloadScanner &amp;&amp; m_host.hasPreloadScanner())</div>
+<div>            m_host.appendCurrentInputStreamToPreloadScannerAndScan();</div>
+<div>        executeParsingBlockingScripts();</div>
+<div>    }</div>
+<div>}</div>
+</div>
+<div>===</div>
+<div>★ WebCore::HTMLScriptRunner::runScript</div>
+<div>具体的javascript如何执行的机制不再深究，此内容将放入相关章节</div>
+<div>#0    0x00000001076478a4 in WebCore::HTMLScriptRunner::runScript(WebCore::Element*, WTF::TextPosition const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLScriptRunner.cpp:302</div>
+<div>
+<div>// This method is meant to match the HTML5 definition of "running a script"</div>
+</div>
+<div>// <a href="http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#running-a-script">http://www.whatwg.org/specs/web-apps/current-work/multipage/scripting-1.html#running-a-script</a></div>
+<div>===</div>
+<div>★ 代码层此的具体执行流程不再赘述，但是可以提供一下目前的调用栈截图：</div>
+<div>===</div>
+</div>
+<div><br/></div>
+<div>首先回顾一下，遇到的js块代码为：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    &lt;script&gt;</div>
+<div>        var special = document.querySelector( '.special' );</div>
+<div>        // 这里需要注意</div>
+<div>        special.innerHTML = '123';</div>
+<div>        special.style.color = 'white';</div>
+<div>    &lt;/script&gt;</div>
+</div>
+<div><br/></div>
+<div>看下目前的调用栈截图：</div>
+<div>由JS调用引起的调用栈：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/8D374114-B5EF-44F1-BB77-157D40A3A75E.png" height="724" width="1928"/></div>
+<div>script结束标签完成后，开始执行JS代码的调用栈：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/57E18747-6722-4A07-B0C2-FF5163CB7377.png" height="1286" width="1882"/></div>
+<div><br/></div>
+<div>起初很好奇，为什么会被断点断住，就是因为JS代码中有：special.innerHTML = '123’; 此句代码，其实本质上修改了DOM树结构：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#9    0x00000001039f03fd in JSC::callCustomSetter(JSC::ExecState*, bool (*)(JSC::ExecState*, long long, long long), bool, JSC::JSValue, JSC::JSValue) at /Users/mrguan/work/svn/Webkit/WebKit/Source/JavaScriptCore/runtime/CustomGetterSetter.cpp:43</div>
+<div>#8    0x0000000107b79a93 in WebCore::setJSElementInnerHTML(JSC::ExecState*, long long, long long) at /Users/mrguan/work/svn/Webkit/WebKit/WebKitBuild/Debug/DerivedSources/WebCore/JSElement.cpp:2956【生成的代码】</div>
+<div>#7    0x00000001071ea4b3 in WebCore::Element::setInnerHTML(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Element.cpp:2383【最终调入Element的方法】</div>
+<div>而setInnerHTML方法会通过WebCore::createFragmentForInnerOuterHTML方法来把字符串转化成DOM节点，并且用到了HTML的词法解析器：</div>
+<div>#6    0x0000000108116c31 in WebCore::createFragmentForInnerOuterHTML(WebCore::Element&amp;, WTF::String const&amp;, WebCore::ParserContentPolicy, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/editing/markup.cpp:889</div>
+<div>#5    0x00000001070905e7 in WebCore::DocumentFragment::parseHTML(WTF::String const&amp;, WebCore::Element*, WebCore::ParserContentPolicy) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/DocumentFragment.cpp:86</div>
+<div>最终如截图所示，调用至：</div>
+<div>#3    0x000000010756fa1b in WebCore::HTMLDocumentParser::insert(WebCore::SegmentedString const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:348</div>
+<div>直至：</div>
+<div>#0    0x000000010756f44c in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:242</div>
+<div>---</div>
+<div>而且重点是，DOM树的创建过程和JS的执行过程，以及JS执行过程中，对DOM树的修改都是在Thread 1中！！！</div>
+</div>
+<div><br/></div>
+<div>且，要设置的字符串，最终被append入一个documentFragment中：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/742489FE-60BB-4124-BEEC-EA4375986150.png" height="380" width="844"/></div>
+<div><br/></div>
+<div>在innerHTML的解析过程中，会创建一个新的HTMLDocumentParser对象，其有自己的HTMLTreeBuilder，以及自己的TreeBuilder自己的m_openElements栈，最终片段解析器执行完毕：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x00000001071ea51f in WebCore::Element::setInnerHTML(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Element.cpp:2389</div>
+<div>
+<div>void Element::setInnerHTML(const String&amp; html, ExceptionCode&amp; ec)</div>
+<div>{</div>
+</div>
+<div>    if (RefPtr&lt;DocumentFragment&gt; fragment = createFragmentForInnerOuterHTML(*this, html, AllowScriptingContent, ec)) {</div>
+<div>        ContainerNode* container = this; // 此container即为JS中获取到的元素</div>
+<div>
+<div> </div>
+<div>        if (is&lt;HTMLTemplateElement&gt;(*this))</div>
+</div>
+<div>            container = downcast&lt;HTMLTemplateElement&gt;(*this).content();</div>
+<div>        // 最终调用此函数来设置当前元素的innerHTML</div>
+<div>
+<div>        replaceChildrenWithFragment(*container, fragment.releaseNonNull(), ec);</div>
+<div>    }</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+</div>
+<div>【JS执行完毕后】</div>
+<div>当js执行完毕后，再次回到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010756f4de in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:245</div>
+<div>...     </div>
+<div>        // 在此判断与句中退出</div>
+<div>
+<div>        if (UNLIKELY(mode == AllowYield &amp;&amp; m_parserScheduler-&gt;shouldYieldBeforeToken(session)))</div>
+<div>            return true;</div>
+</div>
+<div>...</div>
+<div>===</div>
+<div>★ 此句判断最终进入：</div>
+<div>#0    0x0000000107572d91 in WebCore::HTMLParserScheduler::checkForYield(WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLParserScheduler.h:106</div>
+<div>    // 进入这里的判断</div>
+<div>
+<div>    bool checkForYield(PumpSession&amp; session)</div>
+<div>    {</div>
+<div>        session.processedTokens = 1;</div>
+<div>        session.didSeeScript = false;</div>
+<div><br/></div>
+<div>        // monotonicallyIncreasingTime() can be expensive. By delaying, we avoided calling</div>
+<div>        // monotonicallyIncreasingTime() when constructing non-yielding PumpSessions.</div>
+<div>        if (!session.startTime) {</div>
+<div>            session.startTime = monotonicallyIncreasingTime();</div>
+<div>            return false;</div>
+</div>
+<div>        }</div>
+<div>        // 猜测为，计算JS引擎执行完JS代码花费的时间是多少，因为在调试，所以断点会导致JS运行时间过长</div>
+<div>
+<div>        double elapsedTime = monotonicallyIncreasingTime() - session.startTime;</div>
+</div>
+<div>        return elapsedTime &gt; m_parserTimeLimit;</div>
+<div>        // this    WebCore::HTMLParserScheduler *    0x120b0eab0    0x0000000120b0eab0</div>
+<div>        //      m_parserTimeLimit    double    0.5 【应该是秒单位，即500ms】</div>
+<div>        // startTime    double    289191.47667009197</div>
+<div>        // elapsedTime    double    281.6461402560235 【由于断点存在，故这个时间很长】</div>
+<div>
+<div>    }</div>
+</div>
+<div>===</div>
+<div>★ 导致JS执行完毕后，再回到</div>
+<div>#0    0x000000010756f554 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:246</div>
+<div>...</div>
+<div>   if (UNLIKELY(mode == AllowYield &amp;&amp; m_parserScheduler-&gt;shouldYieldBeforeToken(session)))</div>
+<div>       // 直接跳出</div>
+<div>       return true;</div>
+<div>...</div>
+<div>===</div>
+<div>★ 待进入上层函数：</div>
+<div>#0    0x000000010756e612 in WebCore::HTMLDocumentParser::pumpTokenizer(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:292</div>
+<div>...     </div>
+<div>    // shouldResume    bool    true</div>
+<div>
+<div>    if (shouldResume)</div>
+<div>        m_parserScheduler-&gt;scheduleForResume();</div>
+</div>
+<div>...</div>
+<div>===</div>
+<div>★ TODO 最终导致此次 DOM 树构建的整体流程退出。【这是为什么呢？】从代码可以看出，它设置了一个timer来等待下一次继续DOM树的解析。</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【继续开始解析】</div>
+<div>Timer是什么？还没有搞清楚，但是可以通过断点发现，在某一个时刻，逻辑重启，先看下调用栈截图：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20head%E5%8F%8A%E5%89%A9%E4%BD%99%E6%A0%87%E7%AD%BE.resources/EBD98428-95A8-49C7-BCAC-85EB61716965.png" height="828" width="1130"/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x000000010762e776 in WebCore::HTMLParserScheduler::continueNextChunkTimerFired() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLParserScheduler.cpp:107</div>
+<div>#0    0x000000010756eb54 in WebCore::HTMLDocumentParser::resumeParsingAfterYield() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:181</div>
+<div>再次进入相关解析逻辑：</div>
+<div>
+<div>// Used by HTMLParserScheduler</div>
+<div>void HTMLDocumentParser::resumeParsingAfterYield()</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::HTMLDocumentParser *    0x116592700    0x0000000116592700</div>
+<div>
+<div>    // pumpTokenizer can cause this parser to be detached from the Document,</div>
+<div>    // but we need to ensure it isn't deleted yet.</div>
+<div>    Ref&lt;HTMLDocumentParser&gt; protect(*this);</div>
+<div><br/></div>
+<div>    // We should never be here unless we can pump immediately.</div>
+</div>
+<div>    // Call pumpTokenizer() directly so that ASSERTS will fire if we're wrong.</div>
+<div>    // 进入此函数</div>
+<div>
+<div>    pumpTokenizer(AllowYield);</div>
+<div>    endIfDelayed();</div>
+</div>
+<div>}</div>
+<div>===</div>
+<div>★ 由：</div>
+<div>#0    0x000000010756e552 in WebCore::HTMLDocumentParser::pumpTokenizer(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:282</div>
+<div>再次进入loop循环：</div>
+<div>#0    0x000000010756f367 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:229</div>
+<div>// 指导接上下面的【html结束标签】</div>
+</div>
+<div><br/></div>
+<div><br/></div>
+<div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div>
+<div>【html结束标签】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000107688649 in WebCore::HTMLTreeBuilder::processEndTag(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2078</div>
+<div>...</div>
+<div>
+<div>    case InsertionMode::AfterBody:</div>
+<div>        if (token.name() == htmlTag) {</div>
+<div>            if (isParsingFragment()) {</div>
+<div>                parseError(token);</div>
+<div>                return;</div>
+</div>
+<div>            }</div>
+<div>            // 标记状态</div>
+<div>
+<div>            m_insertionMode = InsertionMode::AfterAfterBody;</div>
+<div>            return;</div>
+<div>        }</div>
+<div>        FALLTHROUGH;</div>
+</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>最终进入：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000107685ff0 in WebCore::HTMLTreeBuilder::processToken(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:393</div>
+<div>...</div>
+<div>
+<div>    case HTMLToken::EndOfFile:</div>
+<div>        m_shouldSkipLeadingNewline = false;</div>
+<div>        processEndOfFile(token);</div>
+<div>        break;</div>
+<div>    }</div>
+</div>
+<div>}</div>
+<div>===</div>
+<div>★ processEndOfFile(token)</div>
+<div>#0    0x0000000107689819 in WebCore::HTMLTreeBuilder::processEndOfFile(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:2573</div>
+<div>m_tree.openElements().popAll(); // 最终调用此句</div>
+<div>===</div>
+</div>
+<div><br/></div>
+</div>
+</div>
+</body></html>

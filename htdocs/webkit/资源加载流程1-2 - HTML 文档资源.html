@@ -1,0 +1,414 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-12 11:00:39 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-13 07:04:22 +0000"/><title>资源加载流程1-2 - HTML 文档资源</title></head><body>
+<div>
+<div>
+<div>
+<div>
+<div>
+<div>
+<div>上接：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001073e6061 in WebCore::FrameLoader::addExtraFieldsToRequest(WebCore::ResourceRequest&amp;, WebCore::FrameLoadType, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2551</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div>看一下 ResourceRequestBase::setCachePolicy 函数，用来设置缓存策略，如果缓存被禁用的话才会进到此分支：</div>
+<div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::setCachePolicy(ResourceRequestCachePolicy cachePolicy)</div>
+<div>{</div>
+<div>    updateResourceRequest();</div>
+<div><br/></div>
+<div>    if (m_cachePolicy == cachePolicy)</div>
+<div>        return;</div>
+<div><br/></div>
+<div>    m_cachePolicy = cachePolicy;</div>
+<div><br/></div>
+<div>    if (url().protocolIsInHTTPFamily())</div>
+<div>        m_platformRequestUpdated = false;</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div>往下走继续看到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001088367e2 in WebCore::ResourceRequestBase::firstPartyForCookies() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:193</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>const URL&amp; ResourceRequestBase::firstPartyForCookies() const</div>
+</div>
+<div>{</div>
+<div>    // 看下方代码解释</div>
+<div>    updateResourceRequest();</div>
+<div>    </div>
+<div>    // m_firstPartyForCookies    WebCore::URL   </div>
+<div>
+<div>    return m_firstPartyForCookies;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000108835893 in WebCore::ResourceRequestBase::updateResourceRequest(WebCore::HTTPBodyUpdatePolicy) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:593</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::updateResourceRequest(HTTPBodyUpdatePolicy bodyPolicy) const</div>
+</div>
+<div>{</div>
+<div>    // this    const WebCore::ResourceRequestBase *    0x1165f0ed0    0x00000001165f0ed0</div>
+<div>    // bodyPolicy    WebCore::HTTPBodyUpdatePolicy    DoNotUpdateHTTPBody</div>
+<div>
+<div>    if (!m_resourceRequestUpdated) {</div>
+<div>        ASSERT(m_platformRequestUpdated);</div>
+<div>        const_cast&lt;ResourceRequest&amp;&gt;(asResourceRequest()).doUpdateResourceRequest();</div>
+<div>        m_resourceRequestUpdated = true;</div>
+<div>    }</div>
+<div><br/></div>
+<div>    if (!m_resourceRequestBodyUpdated &amp;&amp; bodyPolicy == UpdateHTTPBody) {</div>
+<div>        ASSERT(m_platformRequestBodyUpdated);</div>
+<div>        const_cast&lt;ResourceRequest&amp;&gt;(asResourceRequest()).doUpdateResourceHTTPBody();</div>
+<div>        m_resourceRequestBodyUpdated = true;</div>
+</div>
+<div>    }</div>
+<div>    // 第一次 Debug 排查，这两个分支语句都跳过去了，暂不再深究</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>WebCore::HTTPBodyUpdatePolicy 枚举类：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>namespace WebCore {</div>
+<div>    ...</div>
+<div>
+<div>    enum HTTPBodyUpdatePolicy {</div>
+<div>        DoNotUpdateHTTPBody,</div>
+<div>        UpdateHTTPBody</div>
+</div>
+<div>    };</div>
+<div>...</div>
+</div>
+</div>
+<div><br/></div>
+<hr/>
+<div>★设置 userAgent 的代码比较有意思，查看下列代码：</div>
+<div><br/></div>
+<div>调起：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#3    0x00000001073e617d in WebCore::FrameLoader::addExtraFieldsToRequest(WebCore::ResourceRequest&amp;, WebCore::FrameLoadType, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2567</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>applyUserAgent(request);</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#2    0x00000001073ecb71 in WebCore::FrameLoader::applyUserAgent(WebCore::ResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:3155</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void FrameLoader::applyUserAgent(ResourceRequest&amp; request)</div>
+<div>{</div>
+<div>    String userAgent = this-&gt;userAgent(request.url());</div>
+</div>
+<div>    ASSERT(!userAgent.isNull());</div>
+<div>    // 见后续代码</div>
+<div>
+<div>    request.setHTTPUserAgent(userAgent);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x00000001073eca0d in WebCore::FrameLoader::userAgent(WebCore::URL const&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2481</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>String FrameLoader::userAgent(const URL&amp; url) const</div>
+<div>{</div>
+<div>    return m_client.userAgent(url);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000102db8329 in WebFrameLoaderClient::userAgent(WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebKit/mac/WebCoreSupport/WebFrameLoaderClient.mm:1544</div>
+</div>
+<div><br/></div>
+<div>WebFrameLoaderClient::userAgent 应该属于应用层之上的 API 了，下面是 Objective-C 的实现：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>String WebFrameLoaderClient::userAgent(const URL&amp; url)</div>
+<div>{</div>
+<div>    WebView *webView = getWebView(m_webFrame.get());</div>
+<div>    ASSERT(webView);</div>
+<div><br/></div>
+<div>    // We should never get here with nil for the WebView unless there is a bug somewhere else.</div>
+<div>    // But if we do, it's better to return the empty string than just crashing on the spot.</div>
+<div>    // Most other call sites are tolerant of nil because of Objective-C behavior, but this one</div>
+<div>    // is not because the return value of _userAgentForURL is a const URL&amp;.</div>
+<div>    if (!webView)</div>
+</div>
+<div>        return emptyString();</div>
+<div>    // m_data8    const LChar *    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/602.1.33+ (KHTML, like Gecko)"    0x00000001155ed394</div>
+<div>
+<div>    return [webView _userAgentString];</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div>request.setHTTPUserAgent(userAgent) 语句的后续分析：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x0000000108836ee4 in WebCore::ResourceRequestBase::setHTTPUserAgent(WTF::String const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:349</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::setHTTPUserAgent(const String&amp; httpUserAgent)</div>
+<div>{</div>
+<div>    setHTTPHeaderField(HTTPHeaderName::UserAgent, httpUserAgent);</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000108836b57 in WebCore::ResourceRequestBase::setHTTPHeaderField(WebCore::HTTPHeaderName, WTF::String const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:265</div>
+</div>
+<div><br/></div>
+<div>在 ResourceRequestBase 中，有 setHTTPHeaderField 方法来设置各种请求头键值对：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::setHTTPHeaderField(HTTPHeaderName name, const String&amp; value)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::ResourceRequestBase *    0x1165f0ed0    0x00000001165f0ed0</div>
+<div>
+<div>    updateResourceRequest();</div>
+</div>
+<div><br/></div>
+<div>    // m_httpHeaderFields    WebCore::HTTPHeaderMap</div>
+<div>
+<div>    m_httpHeaderFields.set(name, value);</div>
+<div><br/></div>
+<div>    if (url().protocolIsInHTTPFamily())</div>
+<div>        m_platformRequestUpdated = false;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>ResourceRequest 的 m_httpHeaderFields 成员是一个 WebCore::HTTPHeaderMap 类型：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010769fccf in WebCore::HTTPHeaderMap::set(WebCore::HTTPHeaderName, WTF::String const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/HTTPHeaderMap.cpp:127</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void HTTPHeaderMap::set(HTTPHeaderName name, const String&amp; value)</div>
+</div>
+<div>{</div>
+<div>    // m_commonHeaders    WebCore::HTTPHeaderMap::CommonHeadersHashMap</div>
+<div>    // name    WebCore::HTTPHeaderName    UserAgent</div>
+<div>    // value    const WTF::String &amp;    0x00007fff5fbf9308</div>
+<div>    // 设置键值对</div>
+<div>
+<div>    m_commonHeaders.set(name, value);</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<hr/>
+<div>★addHTTPOriginIfNeeded(request, String()) 的相关说明</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x00000001073e6481 in WebCore::FrameLoader::addExtraFieldsToRequest(WebCore::ResourceRequest&amp;, WebCore::FrameLoadType, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2614</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void FrameLoader::addHTTPOriginIfNeeded(ResourceRequest&amp; request, const String&amp; origin)</div>
+<div>{</div>
+<div>    if (!request.httpOrigin().isEmpty())</div>
+<div>        return;  // Request already has an Origin header.</div>
+</div>
+<div><br/></div>
+<div>    // 在 GET 或者 HEAD 请求模式下，origin 字段不会被带上；在测试中直接跳出了</div>
+<div>
+<div>    // Don't send an Origin header for GET or HEAD to avoid privacy issues.</div>
+<div>    // For example, if an intranet page has a hyperlink to an external web</div>
+<div>    // site, we don't want to include the Origin of the request because it</div>
+<div>    // will leak the internal host name. Similar privacy concerns have lead</div>
+<div>    // to the widespread suppression of the Referer header at the network</div>
+<div>    // layer.</div>
+<div>    if (request.httpMethod() == "GET" || request.httpMethod() == "HEAD")</div>
+<div>        return;</div>
+<div><br/></div>
+<div>    // For non-GET and non-HEAD methods, always send an Origin header so the</div>
+<div>    // server knows we support this feature.</div>
+<div><br/></div>
+<div>    if (origin.isEmpty()) {</div>
+<div>        // If we don't know what origin header to attach, we attach the value</div>
+<div>        // for an empty origin.</div>
+<div>        request.setHTTPOrigin(SecurityOrigin::createUnique()-&gt;toString());</div>
+<div>        return;</div>
+<div>    }</div>
+<div><br/></div>
+<div>    request.setHTTPOrigin(origin);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<hr/>
+<div>★request.setResponseContentDispositionEncodingFallbackArray 方法的调用</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x00000001073e651c in WebCore::FrameLoader::addExtraFieldsToRequest(WebCore::ResourceRequest&amp;, WebCore::FrameLoadType, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2619</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010883599e in WebCore::ResourceRequestBase::setResponseContentDispositionEncodingFallbackArray(WTF::String const&amp;, WTF::String const&amp;, WTF::String const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:394</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::setResponseContentDispositionEncodingFallbackArray(const String&amp; encoding1, const String&amp; encoding2, const String&amp; encoding3)</div>
+<div>{</div>
+<div>    updateResourceRequest();</div>
+</div>
+<div><br/></div>
+<div>    // this    WebCore::ResourceRequestBase *    0x1165f28d0    0x00000001165f28d0</div>
+<div>    // m_responseContentDispositionEncodingFallbackArray    WTF::Vector&lt;WTF::String, 0, WTF::CrashOnOverflow, 16&gt;  </div>
+<div>    // encoding3 m_data8    const LChar *    "ISO-8859-1"    0x00000001155b0af4</div>
+<div>    // encoding2 m_data8    const LChar *    "UTF-8t.org"    0x00000001155892f4</div>
+<div>    // encoding1 m_data8    const LChar *    "UTF-8ridlog"    0x00000001154bcaf4</div>
+<div>
+<div>    m_responseContentDispositionEncodingFallbackArray.clear();</div>
+<div>    m_responseContentDispositionEncodingFallbackArray.reserveInitialCapacity(!encoding1.isNull() + !encoding2.isNull() + !encoding3.isNull());</div>
+<div>    if (!encoding1.isNull())</div>
+<div>        m_responseContentDispositionEncodingFallbackArray.uncheckedAppend(encoding1);</div>
+<div>    if (!encoding2.isNull())</div>
+<div>        m_responseContentDispositionEncodingFallbackArray.uncheckedAppend(encoding2);</div>
+<div>    if (!encoding3.isNull())</div>
+<div>        m_responseContentDispositionEncodingFallbackArray.uncheckedAppend(encoding3);</div>
+<div><br/></div>
+<div>    if (url().protocolIsInHTTPFamily())</div>
+<div>        m_platformRequestUpdated = false;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<hr/>
+<div>★★续接 FrameLoader::load 中 addExtraFieldsToMainResourceRequest(r) 之后的函数调用</div>
+<div>★ FrameLoader::shouldTreatURLAsSameAsCurrent 函数分析</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x00000001073e4d5f in WebCore::FrameLoader::load(WebCore::DocumentLoader*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1335</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001073e54f7 in WebCore::FrameLoader::shouldTreatURLAsSameAsCurrent(WebCore::URL const&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:3216</div>
+</div>
+<div><br/></div>
+<div>此函数用来判断，新定向的 URL 是不是和最近的一条历史记录 URL 是相同的</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>bool FrameLoader::shouldTreatURLAsSameAsCurrent(const URL&amp; url) const</div>
+</div>
+<div>{</div>
+<div>    // url    const WebCore::URL &amp;    0x00000001165f31e0【最新定向的链接】</div>
+<div>    // url m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div>
+<div>    // this    const WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div>
+<div>    // Debug 中得到的 currentItem() 值为：</div>
+<div>    // m_ptr    WebCore::HistoryItem *    0x1154be0c8    0x00000001154be0c8</div>
+<div>    // m_urlString WTF::String:</div>
+<div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014</div>
+<div>    // m_originalURLString    WTF::String:</div>
+<div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014</div>
+<div>
+<div>    if (!history().currentItem())</div>
+<div>        return false;</div>
+<div>    return url == history().currentItem()-&gt;url() || url == history().currentItem()-&gt;originalURL();</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<hr/>
+<div>★FrameLoader::shouldReloadToHandleUnreachableURL 解析</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001073e7981 in WebCore::FrameLoader::shouldReloadToHandleUnreachableURL(WebCore::DocumentLoader*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1518</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>bool FrameLoader::shouldReloadToHandleUnreachableURL(DocumentLoader* docLoader)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div>
+<div>    // docLoader    WebDocumentLoaderMac *    0x1165f3100    0x00000001165f3100</div>
+<div>    // unreachableURL    WebCore::URL   </div>
+<div>    // m_data8    const LChar *    NULL  </div>
+<div style="margin-left:40px;">// const URL&amp; DocumentLoader::unreachableURL() const</div>
+<div style="margin-left:40px;">// {</div>
+<div style="margin-left:40px;">//     return m_substituteData.failingURL();</div>
+<div style="margin-left:40px;">// } </div>
+<div>    URL unreachableURL = docLoader-&gt;unreachableURL();</div>
+<div>    // 初次排查确实为isEmpty</div>
+<div>
+<div>    if (unreachableURL.isEmpty())</div>
+<div>        return false;</div>
+<div><br/></div>
+<div>    if (!isBackForwardLoadType(policyChecker().loadType()))</div>
+<div>        return false;</div>
+<div><br/></div>
+<div>    // We only treat unreachableURLs specially during the delegate callbacks</div>
+<div>    // for provisional load errors and navigation policy decisions. The former</div>
+<div>    // case handles well-formed URLs that can't be loaded, and the latter</div>
+<div>    // case handles malformed URLs and unknown schemes. Loading alternate content</div>
+<div>    // at other times behaves like a standard load.</div>
+<div>    if (policyChecker().delegateIsDecidingNavigationPolicy() || policyChecker().delegateIsHandlingUnimplementablePolicy())</div>
+<div>        return m_policyDocumentLoader &amp;&amp; unreachableURL == m_policyDocumentLoader-&gt;request().url();</div>
+<div><br/></div>
+<div>    return unreachableURL == m_provisionalLoadErrorBeingHandledURL;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>★来看 WebCore::FrameLoader::load 函数的最后一步：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001073e4e84 in WebCore::FrameLoader::load(WebCore::DocumentLoader*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1363</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001073e7219 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1405</div>
+</div>
+<div><br/></div>
+<div>此函数又是一个巨长无比的函数。</div>
+<div><br/></div>
+<div>接下节</div>
+</body></html>

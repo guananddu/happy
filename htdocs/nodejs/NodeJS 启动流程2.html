@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-22 02:49:07 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-23 03:55:01 +0000"/><title>NodeJS 启动流程2</title></head><body>
+<div>
+<div>继续从 lib_uv 初始化开始：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>static uv_loop_t default_loop_struct;</div>
+<div>static uv_loop_t* default_loop_ptr;</div>
+<div><br/></div>
+</div>
+<div>uv_loop_t* uv_default_loop(void) {</div>
+<div>  // 第一次进来肯定没初始化完全</div>
+<div>
+<div>  if (default_loop_ptr != NULL)</div>
+</div>
+<div>    return default_loop_ptr;</div>
+<div>  // 再观察此重点函数吧</div>
+<div>
+<div>  if (uv_loop_init(&amp;default_loop_struct))</div>
+<div>    return NULL;</div>
+<div><br/></div>
+<div>  default_loop_ptr = &amp;default_loop_struct;</div>
+<div>  return default_loop_ptr;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010101fcbc in uv_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/loop.c:33</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>int uv_loop_init(uv_loop_t* loop) {</div>
+</div>
+<div>  int err;</div>
+<div>  // loop    uv_loop_t *    0x101b0bf40    0x0000000101b0bf40</div>
+<div>  // 此函数初始化信号相关，且保证只执行一次</div>
+<div>
+<div>  uv__signal_global_once_init();</div>
+</div>
+<div><br/></div>
+<div>  // print sizeof(*loop) (unsigned long) $2 = 1072</div>
+<div>  // 给 loop 的存储空间填充 0 或者 NULL</div>
+<div>  memset(loop, 0, sizeof(*loop));</div>
+<div>  // 见下</div>
+<div>  heap_init((struct heap*) &amp;loop-&gt;timer_heap);</div>
+<div>  // 以下均是相关双向链表的初始化</div>
+<div>
+<div>  QUEUE_INIT(&amp;loop-&gt;wq);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;active_reqs);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;idle_handles);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;async_handles);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;check_handles);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;prepare_handles);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;handle_queue);</div>
+<div><br/></div>
+<div>  loop-&gt;nfds = 0;</div>
+<div>  loop-&gt;watchers = NULL;</div>
+<div>  loop-&gt;nwatchers = 0;</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;pending_queue);</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;watcher_queue);</div>
+<div><br/></div>
+</div>
+<div>  loop-&gt;closing_handles = NULL;</div>
+<div>  // 开始更新时间，见下：</div>
+<div>
+<div>  uv__update_time(loop);</div>
+<div>  uv__async_init(&amp;loop-&gt;async_watcher);</div>
+<div>  loop-&gt;signal_pipefd[0] = -1;</div>
+<div>  loop-&gt;signal_pipefd[1] = -1;</div>
+<div>  loop-&gt;backend_fd = -1;</div>
+<div>  loop-&gt;emfile_fd = -1;</div>
+<div><br/></div>
+<div>  loop-&gt;timer_counter = 0;</div>
+<div>  loop-&gt;stop_flag = 0;</div>
+<div><br/></div>
+<div>  err = uv__platform_loop_init(loop);</div>
+<div>  if (err)</div>
+<div>    return err;</div>
+<div><br/></div>
+<div>  err = uv_signal_init(loop, &amp;loop-&gt;child_watcher);</div>
+<div>  if (err)</div>
+<div>    goto fail_signal_init;</div>
+<div><br/></div>
+<div>  uv__handle_unref(&amp;loop-&gt;child_watcher);</div>
+<div>  loop-&gt;child_watcher.flags |= UV__HANDLE_INTERNAL;</div>
+<div>  QUEUE_INIT(&amp;loop-&gt;process_handles);</div>
+<div><br/></div>
+<div>  err = uv_rwlock_init(&amp;loop-&gt;cloexec_lock);</div>
+<div>  if (err)</div>
+<div>    goto fail_rwlock_init;</div>
+<div><br/></div>
+<div>  err = uv_mutex_init(&amp;loop-&gt;wq_mutex);</div>
+<div>  if (err)</div>
+<div>    goto fail_mutex_init;</div>
+<div><br/></div>
+<div>  err = uv_async_init(loop, &amp;loop-&gt;wq_async, uv__work_done);</div>
+<div>  if (err)</div>
+<div>    goto fail_async_init;</div>
+<div><br/></div>
+<div>  uv__handle_unref(&amp;loop-&gt;wq_async);</div>
+<div>  loop-&gt;wq_async.flags |= UV__HANDLE_INTERNAL;</div>
+<div><br/></div>
+<div>  return 0;</div>
+<div><br/></div>
+<div>fail_async_init:</div>
+<div>  uv_mutex_destroy(&amp;loop-&gt;wq_mutex);</div>
+<div><br/></div>
+<div>fail_mutex_init:</div>
+<div>  uv_rwlock_destroy(&amp;loop-&gt;cloexec_lock);</div>
+<div><br/></div>
+<div>fail_rwlock_init:</div>
+<div>  uv__signal_loop_cleanup(loop);</div>
+<div><br/></div>
+<div>fail_signal_init:</div>
+<div>  uv__platform_loop_delete(loop);</div>
+<div><br/></div>
+<div>  return err;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>void uv__signal_global_once_init(void) {</div>
+<div>  // 此函数暂不去深究，但是其相关知识点见下</div>
+<div>  // static pthread_once_t uv__signal_global_init_guard = PTHREAD_ONCE_INIT;</div>
+<div>
+<div>  pthread_once(&amp;uv__signal_global_init_guard, uv__signal_global_init);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>from：<a href="http://blog.csdn.net/sjin_1314/article/details/10934239">http://blog.csdn.net/sjin_1314/article/details/10934239</a></div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/7DE2D873-1F2E-4653-B50B-FF84B2DEB1F4.png" height="732" width="1906"/></div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>看 uv__signal_global_init 函数的执行调用栈：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/21D82A38-2806-4F0B-A28D-00DC80A14A12.png" height="456" width="502"/></div>
+<div><br/></div>
+<div>具体 uv__signal_global_init 做了些什么，实在太烧脑和底层，暂时不深究了。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>来关注 heap_init 函数，这个比较有意思：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000101020198 in heap_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/heap-inl.h:63</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>HEAP_EXPORT(void heap_init(struct heap* heap)) {</div>
+<div>  // 算是初始化</div>
+<div>
+<div>  heap-&gt;min = NULL;</div>
+<div>  heap-&gt;nelts = 0;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>再来看看：HEAP_EXPORT 宏：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#if defined(__GNUC__)</div>
+<div># 注意这里的 __attribute__((unused))</div>
+<div>
+<div># define HEAP_EXPORT(declaration) __attribute__((unused)) static declaration</div>
+<div>#else</div>
+<div># define HEAP_EXPORT(declaration) static declaration</div>
+</div>
+<div>#endif</div>
+</div>
+<div><br/></div>
+<div>从：<a href="http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0348bc/Cacghbaa.html">http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0348bc/Cacghbaa.html</a> 这个网站山找到了其解释：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/65FE7003-CF63-451F-9019-F7468028F33B.png" height="528" width="1786"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/BA0D653F-7181-41E1-A6EF-66B87140EF8B.png" height="374" width="1794"/></div>
+<div><br/></div>
+<div>用在此处，即：定义好的 heap_init 函数可能不会用到，请不要发出警告。</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>heap_init((struct heap*) &amp;loop-&gt;timer_heap); // 调用</div>
+</div>
+<div><br/></div>
+<div>注意，loop 为入参，其类型为：uv_loop_t</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>typedef struct uv_loop_s uv_loop_t;</div>
+</div>
+</div>
+<div><br/></div>
+<div>再看 uv_loop_s 构成：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>struct uv_loop_s {</div>
+<div>  /* User data - use this for whatever. */</div>
+<div>  void* data;</div>
+<div>  /* Loop reference counting. */</div>
+<div>  unsigned int active_handles;</div>
+<div>  void* handle_queue[2];</div>
+<div>  void* active_reqs[2];</div>
+<div>  /* Internal flag to signal loop stop. */</div>
+<div>  unsigned int stop_flag;</div>
+<div>  UV_LOOP_PRIVATE_FIELDS</div>
+<div>};</div>
+</div>
+</div>
+<div><br/></div>
+<div>再来看看 UV_LOOP_PRIVATE_FIELDS ，这个应该是其私有字段：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>#define UV_LOOP_PRIVATE_FIELDS                                                \</div>
+<div>  unsigned long flags;                                                        \</div>
+<div>  int backend_fd;                                                             \</div>
+<div>  void* pending_queue[2];                                                     \</div>
+<div>  void* watcher_queue[2];                                                     \</div>
+<div>  uv__io_t** watchers;                                                        \</div>
+<div>  unsigned int nwatchers;                                                     \</div>
+<div>  unsigned int nfds;                                                          \</div>
+<div>  void* wq[2];                                                                \</div>
+<div>  uv_mutex_t wq_mutex;                                                        \</div>
+<div>  uv_async_t wq_async;                                                        \</div>
+<div>  uv_rwlock_t cloexec_lock;                                                   \</div>
+<div>  uv_handle_t* closing_handles;                                               \</div>
+<div>  void* process_handles[2];                                                   \</div>
+<div>  void* prepare_handles[2];                                                   \</div>
+<div>  void* check_handles[2];                                                     \</div>
+<div>  void* idle_handles[2];                                                      \</div>
+<div>  void* async_handles[2];                                                     \</div>
+</div>
+<div>  struct uv__async async_watcher;                                             \</div>
+<div><br/></div>
+<div>
+<div>  struct {                                                                    \</div>
+<div>    void* min;                                                                \</div>
+</div>
+<div>    unsigned int nelts;                                                       \</div>
+<div>  } timer_heap;                                                               \ // timer_heap 在这里也是一个结构体</div>
+<div><br/></div>
+<div>
+<div>  uint64_t timer_counter;                                                     \</div>
+<div>  uint64_t time;                                                              \</div>
+<div>  int signal_pipefd[2];                                                       \</div>
+<div>  uv__io_t signal_io_watcher;                                                 \</div>
+<div>  uv_signal_t child_watcher;                                                  \</div>
+<div>  int emfile_fd;                                                              \</div>
+<div>  UV_PLATFORM_LOOP_FIELDS                                                     \</div>
+</div>
+</div>
+<div><br/></div>
+<div>而且在传入 heap_init 函数时，对 timer_heap 进行了强制的类型转化，转化成：(struct heap*)</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>/* A binary min heap.  The usual properties hold: the root is the lowest</div>
+<div> * element in the set, the height of the tree is at most log2(nodes) and</div>
+</div>
+<div> * it's always a complete binary tree.</div>
+<div> * 一个最小二叉堆树</div>
+<div>
+<div> * The heap function try hard to detect corrupted tree nodes at the cost</div>
+<div> * of a minor reduction in performance.  Compile with -DNDEBUG to disable.</div>
+<div> */</div>
+<div>struct heap {</div>
+<div>  struct heap_node* min;</div>
+<div>  unsigned int nelts;</div>
+<div>};</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>再来看 QUEUE_INIT(&amp;loop-&gt;wq)，基本上，loop 中是 void* xxx[2] 类型的字段，都是和双向链表相关的字段，双向链表初始化：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>#define QUEUE_INIT(q)                                                         \</div>
+<div>  do {                                                                        \</div>
+<div>    QUEUE_NEXT(q) = (q);                                                      \</div>
+<div>    QUEUE_PREV(q) = (q);                                                      \</div>
+<div>  }                                                                           \</div>
+<div>  while (0)</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>typedef void *QUEUE[2];</div>
+<div><br/></div>
+</div>
+<div>/* Private macros. */</div>
+<div>/* 即：第 0 个元素指向指向下一个节点；第 1 个元素指向前一个节点 */</div>
+<div>
+<div>#define QUEUE_NEXT(q)       (*(QUEUE **) &amp;((*(q))[0]))</div>
+<div>#define QUEUE_PREV(q)       (*(QUEUE **) &amp;((*(q))[1]))</div>
+<div>#define QUEUE_PREV_NEXT(q)  (QUEUE_NEXT(QUEUE_PREV(q)))</div>
+<div>#define QUEUE_NEXT_PREV(q)  (QUEUE_PREV(QUEUE_NEXT(q)))</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001010201c1 in uv__update_time at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/internal.h:296</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>UV_UNUSED(static void uv__update_time(uv_loop_t* loop)) {</div>
+<div>  /* Use a fast time source if available.  We only need millisecond precision.</div>
+</div>
+<div>   */</div>
+<div>  // 最后计算完毕后：time    uint64_t    15372661【毫秒级精度】</div>
+<div>
+<div>  loop-&gt;time = uv__hrtime(UV_CLOCK_FAST) / 1000000;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>typedef enum {</div>
+<div>  UV_CLOCK_PRECISE = 0,  /* Use the highest resolution clock available. */</div>
+<div>  UV_CLOCK_FAST = 1      /* Use the fastest clock with &lt;= 1ms granularity. */</div>
+<div>} uv_clocktype_t;</div>
+</div>
+</div>
+<div><br/></div>
+<div>来看看 UV_UNUSED 的定义：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>/* The __clang__ and __INTEL_COMPILER checks are superfluous because they</div>
+<div> * define __GNUC__. They are here to convey to you, dear reader, that these</div>
+<div> * macros are enabled when compiling with clang or icc.</div>
+<div> */</div>
+<div>#if defined(__clang__) ||                                                     \</div>
+<div>    defined(__GNUC__) ||                                                      \</div>
+<div>    defined(__INTEL_COMPILER) ||                                              \</div>
+<div>    defined(__SUNPRO_C)</div>
+<div># define UV_DESTRUCTOR(declaration) __attribute__((destructor)) declaration</div>
+<div># define UV_UNUSED(declaration)     __attribute__((unused)) declaration</div>
+<div>#else</div>
+<div># define UV_DESTRUCTOR(declaration) declaration</div>
+<div># define UV_UNUSED(declaration)     declaration</div>
+<div>#endif</div>
+</div>
+</div>
+<div><br/></div>
+<div>关于 uv__hrtime 仍旧是使用 mac( darwin ) 的机制通过获取 CPU 始终嘀嗒数来测量精确的时间，在 WebKit 源代码分析中也有相关解释，以下为截图：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/75277BE5-FB9E-4A27-8559-3677B2120F90.png" height="1146" width="1664"/></div>
+<div><br/></div>
+<div>lib_uv 这样使用，只列举程式，不过多解释了：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>uint64_t uv__hrtime(uv_clocktype_t type) {</div>
+<div>  static mach_timebase_info_data_t info;</div>
+<div><br/></div>
+<div>  if ((ACCESS_ONCE(uint32_t, info.numer) == 0 ||</div>
+<div>       ACCESS_ONCE(uint32_t, info.denom) == 0) &amp;&amp;</div>
+<div>      mach_timebase_info(&amp;info) != KERN_SUCCESS)</div>
+<div>    abort();</div>
+<div><br/></div>
+<div>  return mach_absolute_time() * info.numer / info.denom;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001010174a8 in uv__async_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/async.c:182</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>void uv__async_init(struct uv__async* wa) {</div>
+<div>  // 也算是初始化作用</div>
+<div>
+<div>  wa-&gt;io_watcher.fd = -1;</div>
+<div>  wa-&gt;wfd = -1;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>首先，入参：loop-&gt;async_watcher， <span style="font: 18.0px Menlo; font-variant-ligatures: no-common-ligatures; color: #d28f5a">struct uv__async async_watcher;</span></div>
+<div><br/></div>
+<div>相关的结构体定义见下：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>struct uv__async {</div>
+<div>  uv__async_cb cb;</div>
+<div>  uv__io_t io_watcher;</div>
+<div>  int wfd;</div>
+</div>
+<div>};</div>
+<div><br/></div>
+<div>// 函数指针</div>
+<div>
+<div>typedef void (*uv__async_cb)(struct uv_loop_s* loop,</div>
+<div>                             struct uv__async* w,</div>
+</div>
+<div>                             unsigned int nevents);</div>
+<div><br/></div>
+<div>typedef struct uv__io_s uv__io_t;</div>
+<div><br/></div>
+<div>
+<div>struct uv__io_s {</div>
+<div>  uv__io_cb cb;</div>
+<div>  void* pending_queue[2];</div>
+<div>  void* watcher_queue[2];</div>
+<div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div>
+<div>  unsigned int events;  /* Current event mask. */</div>
+<div>  int fd;</div>
+<div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div>
+</div>
+<div>};</div>
+<div><br/></div>
+<div>
+<div>typedef void (*uv__io_cb)(struct uv_loop_s* loop,</div>
+<div>                          struct uv__io_s* w,</div>
+<div>                          unsigned int events);</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010103060c in uv__platform_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/darwin.c:41</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 初始化 kqueue （mac darwin）</div>
+<div>int uv__platform_loop_init(uv_loop_t* loop) {</div>
+<div>
+<div>  loop-&gt;cf_state = NULL;</div>
+<div><br/></div>
+<div>  if (uv__kqueue_init(loop))</div>
+<div>    return -errno;</div>
+<div><br/></div>
+<div>  return 0;</div>
+</div>
+<div>}</div>
+<div><br/></div>
+<div>int uv__kqueue_init(uv_loop_t* loop) {</div>
+<div>  // 初始化 kqueue 队列</div>
+<div>  // backend_fd    int    5</div>
+<div>
+<div>  loop-&gt;backend_fd = kqueue();</div>
+<div>  if (loop-&gt;backend_fd == -1)</div>
+<div>    return -errno;</div>
+<div><br/></div>
+<div>  uv__cloexec(loop-&gt;backend_fd, 1);</div>
+<div><br/></div>
+<div>  return 0;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>有关 kqueue 参见：<a href="http://www.ibm.com/developerworks/cn/aix/library/1105_huangrg_kqueue/">http://www.ibm.com/developerworks/cn/aix/library/1105_huangrg_kqueue/</a>，略复杂。</div>
+<div>关于 uv_cloexec 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001010181fa in uv__cloexec at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:550</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>int uv__cloexec(int fd, int set) {</div>
+<div>  int r;</div>
+<div><br/></div>
+<div>  do</div>
+<div>    r = ioctl(fd, set ? FIOCLEX : FIONCLEX);</div>
+<div>  while (r == -1 &amp;&amp; errno == EINTR);</div>
+<div><br/></div>
+<div>  if (r)</div>
+<div>    return -errno;</div>
+<div><br/></div>
+<div>  return 0;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>关于 ioctl 函数：<a href="http://blog.csdn.net/z1179675084/article/details/8854188">http://blog.csdn.net/z1179675084/article/details/8854188</a>，从此文章中可以获悉：</div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/A51185D7-5B46-4AC6-8728-B3C965E68B5D.png" height="100" width="1496"/></div>
+<div>最终 uv__platform_loop_init 函数调用完毕，主要就是初始化 kqueue 队列，并将其 fd 存储至：loop-&gt;backend_fd 中。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x0000000101023d09 in uv_signal_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/signal.c:262</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>int uv_signal_init(uv_loop_t* loop, uv_signal_t* handle) {</div>
+</div>
+<div>  int err;</div>
+<div>  // 见下</div>
+<div>
+<div>  err = uv__signal_loop_once_init(loop);</div>
+<div>  if (err)</div>
+<div>    return err;</div>
+<div><br/></div>
+<div>  uv__handle_init(loop, (uv_handle_t*) handle, UV_SIGNAL);</div>
+<div>  handle-&gt;signum = 0;</div>
+<div>  handle-&gt;caught_signals = 0;</div>
+<div>  handle-&gt;dispatched_signals = 0;</div>
+<div><br/></div>
+<div>  return 0;</div>
+</div>
+<div>}</div>
+<div><br/></div>
+<div>
+<div>static int uv__signal_loop_once_init(uv_loop_t* loop) {</div>
+<div>  int err;</div>
+<div><br/></div>
+<div>  /* Return if already initialized. */</div>
+<div>  if (loop-&gt;signal_pipefd[0] != -1)</div>
+</div>
+<div>    return 0;</div>
+<div>  // 使得 loop-&gt;signal_pipefd 形成管道 0 输入；1 输出</div>
+<div>
+<div>  err = uv__make_pipe(loop-&gt;signal_pipefd, UV__F_NONBLOCK);</div>
+<div>  if (err)</div>
+</div>
+<div>    return err;</div>
+<div>  // 见下</div>
+<div>
+<div>  uv__io_init(&amp;loop-&gt;signal_io_watcher,</div>
+<div>              uv__signal_event,</div>
+<div>              loop-&gt;signal_pipefd[0]);</div>
+<div>  uv__io_start(loop, &amp;loop-&gt;signal_io_watcher, POLLIN);</div>
+<div><br/></div>
+<div>  return 0;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001010224bf in uv__make_pipe at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/process.c:169</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>int uv__make_pipe(int fds[2], int flags) {</div>
+<div><br/></div>
+<div>  // flags    int    1</div>
+<div>
+<div>  if (pipe(fds))</div>
+</div>
+<div>    return -errno;</div>
+<div>  // uv__cloexec 函数见上方</div>
+<div>
+<div>  uv__cloexec(fds[0], 1);</div>
+<div>  uv__cloexec(fds[1], 1);</div>
+<div><br/></div>
+<div>  if (flags &amp; UV__F_NONBLOCK) {</div>
+<div>    uv__nonblock(fds[0], 1);</div>
+<div>    uv__nonblock(fds[1], 1);</div>
+<div>  }</div>
+<div><br/></div>
+<div>  return 0;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>关于 pipe 函数：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/8BE53E15-791C-4ADC-98A9-30BE31398D58.png" height="786" width="1628"/></div>
+</div>
+<div><br/></div>
+<div>
+<div>
+<hr/></div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000101018a43 in uv__io_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:819</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 调用( in uv__signal_loop_once_init )：</div>
+<div>// uv__io_init(&amp;loop-&gt;signal_io_watcher,</div>
+<div>              uv__signal_event, // 此回调函数很长</div>
+<div>
+<div>              loop-&gt;signal_pipefd[0]);</div>
+</div>
+<div><br/></div>
+<div>
+<div>// uv__io_t signal_io_watcher;</div>
+</div>
+<div><br/></div>
+<div>// 摘录：</div>
+<div>
+<div>typedef struct uv__io_s uv__io_t;</div>
+<div><br/></div>
+<div>struct uv__io_s {</div>
+<div>  uv__io_cb cb;</div>
+<div>  void* pending_queue[2];</div>
+<div>  void* watcher_queue[2];</div>
+<div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div>
+<div>  unsigned int events;  /* Current event mask. */</div>
+<div>  int fd;</div>
+<div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div>
+<div>};</div>
+</div>
+<div><br/></div>
+<div>void uv__io_init(uv__io_t* w, uv__io_cb cb, int fd) {</div>
+<div>
+<div>  assert(cb != NULL);</div>
+</div>
+<div>  assert(fd &gt;= -1);</div>
+<div>  // 初始化 loop-&gt;signal_io_watcher 的 pending_queue 和 watcher_queue 双向队列</div>
+<div>
+<div>  QUEUE_INIT(&amp;w-&gt;pending_queue);</div>
+</div>
+<div>  QUEUE_INIT(&amp;w-&gt;watcher_queue);</div>
+<div>  // 设置回调函数指针</div>
+<div>  w-&gt;cb = cb;</div>
+<div>  // 设置管道的输入流</div>
+<div>
+<div>  w-&gt;fd = fd;</div>
+<div>  w-&gt;events = 0;</div>
+</div>
+<div>  w-&gt;pevents = 0;</div>
+<div>// Mac 平台下此处会继续</div>
+<div>
+<div>#if defined(UV_HAVE_KQUEUE)</div>
+<div>  w-&gt;rcount = 0;</div>
+<div>  w-&gt;wcount = 0;</div>
+<div>#endif /* defined(UV_HAVE_KQUEUE) */</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000101018b75 in uv__io_start at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:836</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 调用：uv__io_start(loop, &amp;loop-&gt;signal_io_watcher, POLLIN);</div>
+<div><br/></div>
+<div>
+<div>/*</div>
+<div> * Requestable events.  If poll(2) finds any of these set, they are</div>
+<div> * copied to revents on return.</div>
+<div> */</div>
+<div>#define POLLIN 0x0001 /* any readable data available */</div>
+<div>#define POLLPRI 0x0002 /* OOB/Urgent readable data */</div>
+<div>#define POLLOUT 0x0004 /* file descriptor is writeable */</div>
+<div>#define POLLRDNORM 0x0040 /* non-OOB/URG data available */</div>
+<div>#define POLLWRNORM POLLOUT /* no write type differentiation */</div>
+<div>#define POLLRDBAND 0x0080 /* OOB/Urgent readable data */</div>
+<div>#define POLLWRBAND 0x0100 /* OOB/Urgent data can be written */</div>
+</div>
+<div><br/></div>
+<div>void uv__io_start(uv_loop_t* loop, uv__io_t* w, unsigned int events) {</div>
+<div>
+<div>  assert(0 == (events &amp; ~(POLLIN | POLLOUT | UV__POLLRDHUP)));</div>
+<div>  assert(0 != events);</div>
+<div>  assert(w-&gt;fd &gt;= 0);</div>
+</div>
+<div>  assert(w-&gt;fd &lt; INT_MAX);</div>
+<div>  // 设置掩码</div>
+<div>  w-&gt;pevents |= events;</div>
+<div>  // 见下：w-&gt;fd === 6</div>
+<div>
+<div>  maybe_resize(loop, w-&gt;fd + 1);</div>
+<div><br/></div>
+<div>#if !defined(__sun)</div>
+<div>  /* The event ports backend needs to rearm all file descriptors on each and</div>
+<div>   * every tick of the event loop but the other backends allow us to</div>
+<div>   * short-circuit here if the event mask is unchanged.</div>
+<div>   */</div>
+<div>  if (w-&gt;events == w-&gt;pevents) {</div>
+<div>    if (w-&gt;events == 0 &amp;&amp; !QUEUE_EMPTY(&amp;w-&gt;watcher_queue)) {</div>
+<div>      QUEUE_REMOVE(&amp;w-&gt;watcher_queue);</div>
+<div>      QUEUE_INIT(&amp;w-&gt;watcher_queue);</div>
+<div>    }</div>
+<div>    return;</div>
+<div>  }</div>
+<div>#endif</div>
+<div><br/></div>
+<div>  if (QUEUE_EMPTY(&amp;w-&gt;watcher_queue))</div>
+<div>    QUEUE_INSERT_TAIL(&amp;loop-&gt;watcher_queue, &amp;w-&gt;watcher_queue);</div>
+<div><br/></div>
+<div>  if (loop-&gt;watchers[w-&gt;fd] == NULL) {</div>
+<div>    loop-&gt;watchers[w-&gt;fd] = w;</div>
+<div>    loop-&gt;nfds++;</div>
+<div>  }</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000101018e82 in maybe_resize at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:803</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// uv_loop_t 的字段摘录：</div>
+<div>  ...</div>
+<div>  // 这是一个 watcher 的数组</div>
+<div>  uv__io_t** watchers;                                                       \</div>
+<div>
+<div>  unsigned int nwatchers;                                                     \</div>
+</div>
+<div>  unsigned int nfds;</div>
+<div>  ...</div>
+<div><br/></div>
+<div>static void maybe_resize(uv_loop_t* loop, unsigned int len) {</div>
+<div>
+<div>  uv__io_t** watchers;</div>
+<div>  void* fake_watcher_list;</div>
+<div>  void* fake_watcher_count;</div>
+<div>  unsigned int nwatchers;</div>
+<div>  unsigned int i;</div>
+<div><br/></div>
+<div>  if (len &lt;= loop-&gt;nwatchers)</div>
+<div>    return;</div>
+<div><br/></div>
+<div>  /* Preserve fake watcher list and count at the end of the watchers */</div>
+<div>  if (loop-&gt;watchers != NULL) {</div>
+<div>    fake_watcher_list = loop-&gt;watchers[loop-&gt;nwatchers];</div>
+<div>    fake_watcher_count = loop-&gt;watchers[loop-&gt;nwatchers + 1];</div>
+<div>  } else {</div>
+<div>    fake_watcher_list = NULL;</div>
+<div>    fake_watcher_count = NULL;</div>
+</div>
+<div>  }</div>
+<div>  // loop    uv_loop_t *    0x101b0bf40    0x0000000101b0bf40</div>
+<div>  // len    unsigned int    7</div>
+<div>  // watchers    uv__io_t **    0x7    0x0000000000000007</div>
+<div>  // fake_watcher_list    void *    NULL    0x0000000000000000</div>
+<div>  // fake_watcher_count    void *    NULL    0x0000000000000000</div>
+<div>  // nwatchers    unsigned int    14</div>
+<div>  // 个数</div>
+<div>  nwatchers = next_power_of_two(len + 2) - 2;</div>
+<div>  // 这里其实用到了 realloc 函数，见下截图：</div>
+<div>
+<div>  watchers = uv__realloc(loop-&gt;watchers,</div>
+<div>                         (nwatchers + 2) * sizeof(loop-&gt;watchers[0]));</div>
+<div><br/></div>
+<div>  if (watchers == NULL)</div>
+<div>    abort();</div>
+<div>  for (i = loop-&gt;nwatchers; i &lt; nwatchers; i++)</div>
+<div>    watchers[i] = NULL;</div>
+<div>  watchers[nwatchers] = fake_watcher_list;</div>
+<div>  watchers[nwatchers + 1] = fake_watcher_count;</div>
+<div><br/></div>
+<div>  loop-&gt;watchers = watchers;</div>
+<div>  loop-&gt;nwatchers = nwatchers;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>关于 next_power_of_two ，power 是幂的意思：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/1D1C28DC-9603-4C46-A42C-F6F757DA84C4.png" height="444" width="1282"/></div>
+<div><br/></div>
+<div>有关 realloc 函数：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/F82600FD-BD32-42F5-9DF2-932EA40686FD.png" height="1310" width="2046"/></div>
+<div><br/></div>
+<div>例程：</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B2.resources/EF623CAF-B40C-4A17-BD23-9ABEF1B44DAE.png" height="1324" width="2022"/></div>
+<div><br/></div>
+<div>下文吧，这篇太大了。</div>
+</body></html>

@@ -1,0 +1,453 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-18 14:31:45 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-19 02:33:24 +0000"/><title>资源加载流程1-6 - HTML 文档资源</title></head><body>
+<div>仍旧跟踪：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001070996d9 in WebCore::DocumentLoader::startLoadingMainResource() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:1503</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// this    WebDocumentLoaderMac *    0x1165aed00    0x00000001165aed00</div>
+<div>//      WebCore::DocumentLoader    WebCore::DocumentLoader    </div>
+<div>//           m_cachedResourceLoader    WTF::Ref&lt;WebCore::CachedResourceLoader&gt;    </div>
+<div>//           m_mainResource    WebCore::CachedResourceHandle&lt;WebCore::CachedRawResource&gt;    </div>
+<div>// cachedResourceRequest    WebCore::CachedResourceRequest  是被新创建出来的 </div>
+<div>m_mainResource = m_cachedResourceLoader-&gt;requestMainResource(cachedResourceRequest);</div>
+</div>
+<div><br/></div>
+<div>此行代码的含义，进入此函数的执行：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>CachedResourceHandle&lt;CachedRawResource&gt; CachedResourceLoader::requestMainResource(CachedResourceRequest&amp; request)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::CachedResourceLoader *    0x120efe500    0x0000000120efe500</div>
+<div>    // request    WebCore::CachedResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>
+<div>    return downcast&lt;CachedRawResource&gt;(requestResource(CachedResource::MainResource, request).get());</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>即会把 requestResource(CachedResource::MainResource, request).get() 的返回值转化成 CachedRawResource 类型：</div>
+<div>先进入 requestResource(CachedResource::MainResource, request) 看看：</div>
+<div><br/></div>
+<div>是一个很长的函数，列举局部：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd2417 in WebCore::CachedResourceLoader::requestResource(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:550</div>
+</div>
+<div><br/></div>
+<div>看看其上下文：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    WebCore::CachedResourceLoader *    0x120efe500    0x0000000120efe500</div>
+<div>type    Type    MainResource</div>
+<div>request    WebCore::CachedResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>url    WebCore::URL  </div>
+<div>     m_data8    const LChar *    "http://localhost:8111/sample.html?9"    0x0000000115577a94</div>
+<div>memoryCache    WebCore::MemoryCache &amp;    0x00000001155b0ae0</div>
+<div>resource    WebCore::CachedResourceHandle&lt;WebCore::CachedResource&gt;  </div>
+<div>policy    const RevalidationPolicy    Revalidate</div>
+<div>resource    WebCore::CachedResource *    NULL    </div>
+<div>it    iterator     </div>
+</div>
+<div><br/></div>
+<div>首先会进行 fragment 的去除，然后进行一系列 url 相关的判断：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>URL MemoryCache::removeFragmentIdentifierIfNeeded(const URL&amp; originalURL)</div>
+</div>
+<div>{</div>
+<div>    // 本来测试的 URL 就没有 fragment，故直接返回 originURL</div>
+<div>
+<div>    if (!originalURL.hasFragmentIdentifier())</div>
+<div>        return originalURL;</div>
+<div>    // Strip away fragment identifier from HTTP URLs.</div>
+<div>    // Data URLs must be unmodified. For file and custom URLs clients may expect resources</div>
+<div>    // to be unique even when they differ by the fragment identifier only.</div>
+<div>    if (!originalURL.protocolIsInHTTPFamily())</div>
+<div>        return originalURL;</div>
+<div>    URL url = originalURL;</div>
+<div>    url.removeFragmentIdentifier();</div>
+<div>    return url;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>★ 有一个 canRequest 的大的函数判断：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd1ee1 in WebCore::CachedResourceLoader::canRequest(WebCore::CachedResource::Type, WebCore::URL const&amp;, WebCore::ResourceLoaderOptions const&amp;, bool, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:380</div>
+</div>
+<div><br/></div>
+<div>进入此函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>bool CachedResourceLoader::canRequest(CachedResource::Type type, const URL&amp; url, const ResourceLoaderOptions&amp; options, bool forPreload, bool didReceiveRedirectResponse)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::CachedResourceLoader *    0x120efe500    0x0000000120efe500</div>
+<div>    // type    Type    MainResource</div>
+<div>    // url    const WebCore::URL &amp;    0x00007fff5fbf6c48</div>
+<div>    // options    const WebCore::ResourceLoaderOptions &amp;    0x00007fff5fbf71a8</div>
+<div>    //      m_cachingPolicy    WebCore::CachingPolicy    AllowCaching</div>
+<div>    //      m_defersLoadingPolicy    WebCore::DefersLoadingPolicy    AllowDefersLoading</div>
+<div>    //      m_contentSecurityPolicyImposition    WebCore::ContentSecurityPolicyImposition    DoPolicyCheck</div>
+<div>    //      ...</div>
+<div>    // forPreload    bool    false</div>
+<div>    // didReceiveRedirectResponse    bool    false</div>
+<div>    // skipContentSecurityPolicyCheck    bool    false</div>
+<div>    // redirectResponseReceived    RedirectResponseReceived    No</div>
+<div>    // 第一次判断 document() 的值竟然为 null</div>
+<div>    // m_document    WebCore::Document *    NULL    0x0000000000000000</div>
+<div>
+<div>    if (document() &amp;&amp; !document()-&gt;securityOrigin()-&gt;canDisplay(url)) {</div>
+<div>        if (!forPreload)</div>
+<div>            FrameLoader::reportLocalLoadFailed(frame(), url.stringCenterEllipsizedToLength());</div>
+<div>        LOG(ResourceLoading, "CachedResourceLoader::requestResource URL was not allowed by SecurityOrigin::canDisplay");</div>
+<div>        return false;</div>
+</div>
+<div>    }</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>再往下看，可以看到一段注释：</div>
+<div>    // Some types of resources can be loaded only from the same origin.  Other</div>
+<div>    // types of resources, like Images, Scripts, and CSS, can be loaded from</div>
+<div>    // any URL.</div>
+<div>然后进入 switch 语句。options.requestOriginPolicy() 返回值为：m_requestOriginPolicy    unsigned int    0，即：</div>
+<div>RequestOriginPolicy::UseDefaultOriginRestrictionsForType 而不是 RequestOriginPolicy::RestrictToSameOrigin。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>函数紧接着调用到 canRequestInContentDispositionAttachmentSandbox(type, url)：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd2324 in WebCore::CachedResourceLoader::canRequest(WebCore::CachedResource::Type, WebCore::URL const&amp;, WebCore::ResourceLoaderOptions const&amp;, bool, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:482</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd3f6a in WebCore::CachedResourceLoader::canRequestInContentDispositionAttachmentSandbox(WebCore::CachedResource::Type, WebCore::URL const&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:501</div>
+</div>
+<div><br/></div>
+<div>上下文：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>未初始化：</div>
+<div>this    const WebCore::CachedResourceLoader *    0x120fa7640    0x0000000120fa7640</div>
+<div>type    Type    MainResource</div>
+<div>url    const WebCore::URL &amp;    0x00007fff5fbf6c48</div>
+<div>document    WebCore::Document *    0x10695ca19    0x000000010695ca19</div>
+<div>message    WTF::String  </div>
+<div>ownerElement    WebCore::HTMLFrameOwnerElement *    NULL     </div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    // FIXME: Do we want to expand this to all resource types that the mixed content checker would consider active content?</div>
+<div>    switch (type) {</div>
+</div>
+<div>    case CachedResource::MainResource:</div>
+<div>        // 这里的 ownerElement 仍旧为 NULL 故直接返回 true</div>
+<div>
+<div>        if (auto ownerElement = frame() ? frame()-&gt;ownerElement() : nullptr) {</div>
+<div>            document = &amp;ownerElement-&gt;document();</div>
+<div>            break;</div>
+<div>        }</div>
+<div>        return true;</div>
+</div>
+</div>
+<div><br/></div>
+<div>所以：canRequestInContentDispositionAttachmentSandbox(type, url) 返回 true；</div>
+<div>WebCore::CachedResourceLoader::canRequest 则继续往下执行，开始最后的安全检查：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd3a57 in WebCore::CachedResourceLoader::checkInsecureContent(WebCore::CachedResource::Type, WebCore::URL const&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:335</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    ...</div>
+<div>    case CachedResource::MainResource:</div>
+<div>
+<div>#if ENABLE(LINK_PREFETCH)</div>
+<div>    case CachedResource::LinkPrefetch:</div>
+<div>    case CachedResource::LinkSubresource:</div>
+<div>        // Prefetch cannot affect the current document.</div>
+<div>#endif</div>
+<div>        break;</div>
+<div>    }</div>
+<div>    return true;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>CachedResource::MainResource 直接返回 true，至此 canRequest 函数最终返回 true，逻辑继续往下执行。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>逻辑回归到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd2674 in WebCore::CachedResourceLoader::requestResource(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:564</div>
+</div>
+<div><br/></div>
+<div>中继续执行，在这里创建了 MemoryCache 的单例对象：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    // memoryCache    WebCore::MemoryCache &amp;    0x0000000109f53520</div>
+<div>    //      m_disabled    bool    false </div>
+<div>    auto&amp; memoryCache = MemoryCache::singleton();</div>
+<div>    // 如果请求允许缓存（默认就是允许）&amp;&amp; memoryCache 被禁用（默认不被禁用）故跳过此分支</div>
+<div>
+<div>    if (request.allowsCaching() &amp;&amp; memoryCache.disabled()) {</div>
+<div>        DocumentResourceMap::iterator it = m_documentResources.find(url.string());</div>
+<div>        if (it != m_documentResources.end()) {</div>
+<div>            it-&gt;value-&gt;setOwningCachedResourceLoader(nullptr);</div>
+<div>            m_documentResources.remove(it);</div>
+<div>        }</div>
+<div>    }</div>
+</div>
+</div>
+<div><br/></div>
+<div>直至进入 memoryCache.resourceForRequest 方法：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    if (request.allowsCaching())</div>
+</div>
+<div>        resource = memoryCache.resourceForRequest(request.resourceRequest(), sessionID());</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>CachedResource* MemoryCache::resourceForRequest(const ResourceRequest&amp; request, SessionID sessionID)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // request    const WebCore::ResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>    // sessionID    WebCore::SessionID  </div>
+<div>    //      m_sessionID    uint64_t    1</div>
+<div>    // resources    WTF::HashMap&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt;, WebCore::CachedResource *, WTF::PairHash&lt;WebCore::URL, WTF::String&gt;, WTF::HashTraits&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt; &gt;, WTF::HashTraits&lt;WebCore::CachedResource *&gt; &gt; *    0x120fa7640    0x0000000120fa7640</div>
+<div>    // 这个是用来做什么的？</div>
+<div>
+<div>    auto* resources = sessionResourceMap(sessionID);</div>
+<div>    if (!resources)</div>
+</div>
+<div>        return nullptr;</div>
+<div>    // 最终进入实现方法</div>
+<div>
+<div>    return resourceForRequestImpl(request, *resources);</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>CachedResource* MemoryCache::resourceForRequestImpl(const ResourceRequest&amp; request, CachedResourceMap&amp; resources)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // request    const WebCore::ResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>    // resources    CachedResourceMap &amp;    0x00000001155c2f78</div>
+<div>    // url    WebCore::URL  </div>
+<div>    // key    std::__1::pair&lt;WebCore::URL, WTF::String&gt;     </div>
+<div>    // 确保是在主线程</div>
+<div>    ASSERT(WTF::isMainThread());</div>
+<div>    URL url = removeFragmentIdentifierIfNeeded(request.url());</div>
+<div>// 走入此分支</div>
+<div>#if ENABLE(CACHE_PARTITIONING)</div>
+<div>    // request    const WebCore::ResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>    //      m_cachePartition    WTF::String   </div>
+<div>    //           m_ptr    WTF::StringImpl *    NULL    0x0000000000000000</div>
+<div>    // key    std::__1::pair&lt;WebCore::URL, WTF::String&gt;  </div>
+<div>    //      first    WebCore::URL    </div>
+<div>    //      second    WTF::String     </div>
+<div>
+<div>    auto key = std::make_pair(url, request.cachePartition());</div>
+<div>#else</div>
+<div>    auto&amp; key = url;</div>
+</div>
+<div>#endif</div>
+<div>    // 从 hashMap 中返回</div>
+<div>
+<div>    return resources.get(key);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>以上通过 memoryCache.resourceForRequest 方法先从 memoryCache 中查找是不是存在缓存。</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd2c07 in WebCore::CachedResourceLoader::requestResource(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:601</div>
+</div>
+<div><br/></div>
+<div>在进行完 memoryCache 资源查找后，继续往下走，开始判断缓存重新验证相关逻辑：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    const RevalidationPolicy policy = determineRevalidationPolicy(type, request, resource.get());</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd46de in WebCore::CachedResourceLoader::determineRevalidationPolicy(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;, WebCore::CachedResource*) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:738</div>
+</div>
+<div><br/></div>
+<div>上下文：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    const WebCore::CachedResourceLoader *    0x120fa7640    0x0000000120fa7640</div>
+<div>type    Type    MainResource</div>
+<div>cachedResourceRequest    WebCore::CachedResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>existingResource    WebCore::CachedResource *    NULL    0x0000000000000000</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>CachedResourceLoader::RevalidationPolicy CachedResourceLoader::determineRevalidationPolicy(CachedResource::Type type, CachedResourceRequest&amp; cachedResourceRequest, CachedResource* existingResource) const</div>
+<div>{</div>
+</div>
+<div>    auto&amp; request = cachedResourceRequest.resourceRequest();</div>
+<div>    // 因为没有从 memoryCache 中找到 resource ，所以这里并不存在缓存，直接返回 Load</div>
+<div>
+<div>    if (!existingResource)</div>
+</div>
+<div>        return Load;</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>再看 requestResource 中的：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    case Load:</div>
+<div>        // resource 为 NULL</div>
+<div>
+<div>        if (resource)</div>
+</div>
+<div>            logMemoryCacheResourceRequest(frame(), DiagnosticLoggingKeys::inMemoryCacheKey(), DiagnosticLoggingKeys::unusedKey());</div>
+<div>        // 所以跳至这里执行</div>
+<div>
+<div>        resource = loadResource(type, request);</div>
+<div>        break;</div>
+</div>
+</div>
+<div><br/></div>
+<div>来看 loadResource 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd4efd in WebCore::CachedResourceLoader::loadResource(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:679</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>CachedResourceHandle&lt;CachedResource&gt; CachedResourceLoader::loadResource(CachedResource::Type type, CachedResourceRequest&amp; request)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::CachedResourceLoader *    0x120fa7640    0x0000000120fa7640</div>
+<div>    // type    Type    MainResource</div>
+<div>    // request    WebCore::CachedResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>    // memoryCache    WebCore::MemoryCache &amp;    0x0000000109f53520</div>
+<div>    // resource    WebCore::CachedResourceHandle&lt;WebCore::CachedResource&gt;  </div>
+<div>    // 创建 memoryCache </div>
+<div>    auto&amp; memoryCache = MemoryCache::singleton();</div>
+<div>    // 并确保不存在缓存</div>
+<div>
+<div>    ASSERT(!memoryCache.resourceForRequest(request.resourceRequest(), sessionID()));</div>
+<div><br/></div>
+</div>
+<div>    LOG(ResourceLoading, "Loading CachedResource for '%s'.", request.resourceRequest().url().stringCenterEllipsizedToLength().latin1().data());</div>
+<div>    // 主函数</div>
+<div>
+<div>    CachedResourceHandle&lt;CachedResource&gt; resource = createResource(type, request.mutableResourceRequest(), request.charset(), sessionID());</div>
+<div><br/></div>
+<div>    if (request.allowsCaching() &amp;&amp; !memoryCache.add(*resource))</div>
+<div>        resource-&gt;setOwningCachedResourceLoader(this);</div>
+<div>    if (RuntimeEnabledFeatures::sharedFeatures().resourceTimingEnabled())</div>
+<div>        storeResourceTimingInitiatorInformation(resource, request);</div>
+<div>    return resource;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>最终进入 WebCore::createResource 来创建资源：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd42ca in WebCore::createResource(WebCore::CachedResource::Type, WebCore::ResourceRequest&amp;, WTF::String const&amp;, WebCore::SessionID) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:86</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>namespace WebCore {</div>
+<div><br/></div>
+<div>static CachedResource* createResource(CachedResource::Type type, ResourceRequest&amp; request, const String&amp; charset, SessionID sessionID)</div>
+</div>
+<div>{</div>
+<div>    // type    Type    MainResource</div>
+<div>
+<div>    switch (type) {</div>
+<div>    case CachedResource::ImageResource:</div>
+<div>        return new CachedImage(request, sessionID);</div>
+<div>    case CachedResource::CSSStyleSheet:</div>
+<div>        return new CachedCSSStyleSheet(request, charset, sessionID);</div>
+<div>    case CachedResource::Script:</div>
+<div>        return new CachedScript(request, charset, sessionID);</div>
+<div>    case CachedResource::SVGDocumentResource:</div>
+<div>        return new CachedSVGDocument(request, sessionID);</div>
+<div>#if ENABLE(SVG_FONTS)</div>
+<div>    case CachedResource::SVGFontResource:</div>
+<div>        return new CachedSVGFont(request, sessionID);</div>
+<div>#endif</div>
+<div>    case CachedResource::FontResource:</div>
+<div>        return new CachedFont(request, sessionID);</div>
+<div>    case CachedResource::MediaResource:</div>
+<div>    case CachedResource::RawResource:</div>
+</div>
+<div>    case CachedResource::MainResource:</div>
+<div>        // 走到这里</div>
+<div>        return new CachedRawResource(request, type, sessionID);</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>并最终创建：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bbe5fb in WebCore::CachedRawResource::CachedRawResource(WebCore::ResourceRequest&amp;, WebCore::CachedResource::Type, WebCore::SessionID) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedRawResource.cpp:44</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>namespace WebCore {</div>
+<div><br/></div>
+<div>CachedRawResource::CachedRawResource(ResourceRequest&amp; resourceRequest, Type type, SessionID sessionID)</div>
+<div>    : CachedResource(resourceRequest, type, sessionID)</div>
+<div>    , m_identifier(0)</div>
+<div>    , m_allowEncodedDataReplacement(true)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::CachedRawResource *    0x115fc2d00    0x0000000115fc2d00</div>
+<div>    // resourceRequest    WebCore::ResourceRequest &amp;    0x00007fff5fbf7090</div>
+<div>    // type    Type    MainResource</div>
+<div>    // sessionID    WebCore::SessionID  </div>
+<div>    //      m_sessionID    uint64_t    1 </div>
+<div>
+<div>    ASSERT(isMainOrMediaOrRawResource());</div>
+</div>
+<div>}</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>先回顾一下现在的调用栈截图：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-6%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/75B55FF7-65D1-4B47-96EC-E8369EBDC0B0.png" height="1024" width="1616"/></div>
+<div>
+<hr/></div>
+<div>继续看 CachedResourceLoader::loadResource 函数：</div>
+<div><br/></div>
+<div>接下节：</div>
+</body></html>

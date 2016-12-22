@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-19 12:56:34 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-20 12:37:44 +0000"/><title>C/C++ 模块的加载2 - process.binding 函数的细节</title></head><body>
+<div>
+<div>process.binding 函数在 js 层级的调用中经常用到，固有此篇分析，process.binding 函数被定义的位置在：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000100026837 in node::SetupProcessObject(node::Environment*, int, char const* const*, int, char const* const*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:3392</div>
+<div><br/></div>
+<div>env-&gt;SetMethod(process, "binding", Binding);</div>
+</div>
+<div><br/></div>
+<div>我们直奔主题：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 同样也是在 node.cc 中被定义</div>
+<div>static void Binding(const FunctionCallbackInfo&lt;Value&gt;&amp; args) {</div>
+<div>  // 打上断点，分析一下在执行 bootstrap_node.js 中调用到 process.binding 函数时候的切面截图</div>
+<div>  // env    node::Environment *    0x103809200    0x0000000103809200</div>
+<div>  Environment* env = Environment::GetCurrent(args);</div>
+<div>  // 取到参数名称</div>
+<div>  // module    v8::Local&lt;v8::String&gt;   </div>
+<div>  Local&lt;String&gt; module = args[0]-&gt;ToString(env-&gt;isolate());</div>
+<div>  // module_v    node::Utf8Value  </div>
+<div>  // node::MaybeStackBuffer&lt;char, 1024&gt;    node::MaybeStackBuffer&lt;char, 1024&gt;    </div>
+<div>  // buf_    char *    "contextify”    0x00007fff5fbfe6f8 // 即当前正在加载 contextify 模块 </div>
+<div>  node::Utf8Value module_v(env-&gt;isolate(), module);</div>
+<div>  // binding_cache_object_    v8::Persistent&lt;v8::Object, v8::NonCopyablePersistentTraits&lt;v8::Object&gt; &gt;    </div>
+<div>  // cache    v8::Local&lt;v8::Object&gt;</div>
+<div>  Local&lt;Object&gt; cache = env-&gt;binding_cache_object();</div>
+<div>  // exports    v8::Local&lt;v8::Object&gt;   </div>
+<div>  Local&lt;Object&gt; exports;</div>
+<div>  // 先检查 cache 中有没有 exports，有的话直接返回</div>
+<div>
+<div>  if (cache-&gt;Has(env-&gt;context(), module).FromJust()) {</div>
+<div>    exports = cache-&gt;Get(module)-&gt;ToObject(env-&gt;isolate());</div>
+<div>    args.GetReturnValue().Set(exports);</div>
+<div>    return;</div>
+<div>  }</div>
+<div><br/></div>
+<div>  // Append a string to process.moduleLoadList</div>
+<div>  char buf[1024];</div>
+</div>
+<div>  snprintf(buf, sizeof(buf), "Binding %s", *module_v);</div>
+<div>  // modules    v8::Local&lt;v8::Array&gt;   【可以理解为JS层级的数组】</div>
+<div>  Local&lt;Array&gt; modules = env-&gt;module_load_list_array();</div>
+<div>  // 刚开始为 0</div>
+<div>  uint32_t l = modules-&gt;Length();</div>
+<div>  // (char [1024]) buf = "Binding contextify” // 第一次获取的模块为 contextify 模块</div>
+<div>  modules-&gt;Set(l, OneByteString(env-&gt;isolate(), buf));</div>
+<div>  </div>
+<div>  // 函数体见下</div>
+<div>  node_module* mod = get_builtin_module(*module_v);</div>
+<div><br/></div>
+<div>  // 找到以后：</div>
+<div>  if (mod != nullptr) {</div>
+<div>    // exports    v8::Local&lt;v8::Object&gt;   </div>
+<div>
+<div>    exports = Object::New(env-&gt;isolate());</div>
+</div>
+<div>    // Internal bindings don't have a "module" object, only exports.</div>
+<div>    // Internal bindings 模块只有 mod-&gt;nm_context_register_func 字段</div>
+<div>
+<div>    CHECK_EQ(mod-&gt;nm_register_func, nullptr);</div>
+</div>
+<div>    CHECK_NE(mod-&gt;nm_context_register_func, nullptr);</div>
+<div>    // unused    v8::Local&lt;v8::Value&gt;   </div>
+<div>    Local&lt;Value&gt; unused = Undefined(env-&gt;isolate());</div>
+<div><br/></div>
+<div>    // ★开始调用《构造函数》见下述分析</div>
+<div>    // 此构造函数构建 JS 层级的模块对象</div>
+<div>
+<div>    mod-&gt;nm_context_register_func(exports, unused,</div>
+</div>
+<div>      env-&gt;context(), mod-&gt;nm_priv);</div>
+<div>    // exports 构建完毕，放入 cache</div>
+<div>    // cache 可以考虑就是js层级的{ }对象cache    v8::Local&lt;v8::Object&gt;</div>
+<div>    // module 自然就是js层级的contextify字符串</div>
+<div>    // exports 自然就是js层级的返回对象</div>
+<div>
+<div>    cache-&gt;Set(module, exports);</div>
+<div>  } else if (!strcmp(*module_v, "constants")) {</div>
+<div>    exports = Object::New(env-&gt;isolate());</div>
+<div>    DefineConstants(env-&gt;isolate(), exports);</div>
+<div>    cache-&gt;Set(module, exports);</div>
+<div>  } else if (!strcmp(*module_v, "natives")) {</div>
+<div>    exports = Object::New(env-&gt;isolate());</div>
+<div>    DefineJavaScript(env, exports);</div>
+<div>    cache-&gt;Set(module, exports);</div>
+<div>  } else {</div>
+<div>    char errmsg[1024];</div>
+<div>    snprintf(errmsg,</div>
+<div>             sizeof(errmsg),</div>
+<div>             "No such module: %s",</div>
+<div>             *module_v);</div>
+<div>    return env-&gt;ThrowError(errmsg);</div>
+</div>
+<div>  }</div>
+<div>  // 最后走到最后一步，设置此次binding的调用返回值为 exports即可</div>
+<div>
+<div>  args.GetReturnValue().Set(exports);</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 此函数体，遍历链表 modlist_builtin 来寻找名称为 name 的模块</div>
+<div>// 典型的链表查询</div>
+<div>struct node_module* get_builtin_module(const char* name) {</div>
+<div>  struct node_module* mp;</div>
+<div>  // name    const char *    "contextify"    0x00007fff5fbfe6f8</div>
+<div>
+<div>  for (mp = modlist_builtin; mp != nullptr; mp = mp-&gt;nm_link) {</div>
+<div>    if (strcmp(mp-&gt;nm_modname, name) == 0)</div>
+<div>      break;</div>
+<div>  }</div>
+<div><br/></div>
+<div>  CHECK(mp == nullptr || (mp-&gt;nm_flags &amp; NM_F_BUILTIN) != 0);</div>
+<div>  return (mp);</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 注意这里的三个参数</div>
+<div>// mod-&gt;nm_context_register_func</div>
+<div>
+<div>static void Initialize(Local&lt;Object&gt; target,</div>
+<div>                Local&lt;Value&gt; unused,</div>
+<div>                Local&lt;Context&gt; context) {</div>
+<div>  // 获取相关环境参数</div>
+<div>  Environment* env = Environment::GetCurrent(context);</div>
+<div>  Isolate* isolate = env-&gt;isolate();</div>
+<div>  HandleScope scope(isolate);</div>
+<div>  // 开始为“目标对象”设置方法</div>
+<div>  env-&gt;SetMethod(target, "setupHooks", SetupHooks);</div>
+<div>  env-&gt;SetMethod(target, "disable", DisableHooksJS);</div>
+<div>  env-&gt;SetMethod(target, "enable", EnableHooksJS);</div>
+<div>...</div>
+</div>
+</div>
+<div><br/></div>
+<div>到此，process.binding 函数分析完毕。</div>
+</body></html>

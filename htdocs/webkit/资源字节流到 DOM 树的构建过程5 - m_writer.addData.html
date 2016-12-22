@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-25 09:01:28 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-25 10:36:16 +0000"/><title>资源字节流到 DOM 树的构建过程5 - m_writer.addData</title></head><body>
+<div>
+<div>此节还是重点分析：m_writer.addData 函数的调用，这个函数即为构建 DOM 树的开端：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001070d8198 in WebCore::DocumentWriter::addData(char const*, unsigned long) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentWriter.cpp:228</div>
+<div><br/></div>
+<div>首先确定下，进入此函数后的变量是什么样子的：</div>
+<div>this    WebCore::DocumentWriter *    0x1165f0aa0    0x00000001165f0aa0</div>
+<div>     m_state    WebCore::DocumentWriter::WriterState    StartedWritingState【这是正常情况的状态】</div>
+<div>// bytes 即为此次整体返回的字节流，模拟数据</div>
+<div>bytes    const char *    "&lt;!DOCTYPE html&gt;\n&lt;html lang=\"en\"&gt;\n&lt;head&gt;\n    &lt;meta charset=\"UTF-8\"&gt;\n    &lt;title&gt;Document&lt;/title&gt;\n    &lt;style&gt;\n        .special {\n            width: 100px;\n            height: 100px;\n            background-color: green;\n        }\n        .container {\n            font-size: 20px;\n        }\n    &lt;/style&gt;\n&lt;/head&gt;\n&lt;body&gt;\n    &lt;div class=\"special\"&gt;&lt;/div&gt;\n    &lt;div class=\"container\"&gt;\n        &lt;p&gt;我是一个测试的段落&lt;/p&gt;\n    &lt;/div&gt;\n    &lt;script&gt;\n        var special = document.querySelector( '.special' );\n        special.innerHTML = '123';\n        special.style.color = 'white';\n    &lt;/script&gt;\n&lt;/body&gt;\n&lt;/html&gt;\n\x7f"    0x000000011011d340</div>
+<div><br/></div>
+<div>length    size_t    605</div>
+<div><br/></div>
+<div>===</div>
+<div>★ WebCore::DocumentWriter::addData 函数最后调用：</div>
+<div>#0    0x0000000106fa0f4c in WebCore::DecodedDataDocumentParser::appendBytes(WebCore::DocumentWriter&amp;, char const*, unsigned long) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/DecodedDataDocumentParser.cpp:42</div>
+<div>透传了 bytes 和 length 两个参数</div>
+<div>此函数先对原始数据流进行 decode ，具体进行 decode 的函数参见：</div>
+<div>String TextResourceDecoder::decode(const char* data, size_t len)</div>
+<div>然后通过：reportDataReceived 上报消息；</div>
+<div>最后调入：</div>
+<div>#0    0x000000010756feb0 in WebCore::HTMLDocumentParser::append(WTF::RefPtr&lt;WTF::StringImpl&gt;&amp;&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:364</div>
+<div>＝＝＝</div>
+</div>
+</div>
+<div><br/></div>
+<div>此时的调用栈：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_writer.addData.resources/277B569E-FDF7-492D-A6DC-A8A0C2F92625.png" height="174" width="846"/></div>
+<div><br/></div>
+<hr/>
+<div><br/></div>
+<div>分析 WebCore::HTMLDocumentParser::append 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010756feb0 in WebCore::HTMLDocumentParser::append(WTF::RefPtr&lt;WTF::StringImpl&gt;&amp;&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:364</div>
+<div><br/></div>
+<div>this    WebCore::HTMLDocumentParser *    0x1165f1700    0x00000001165f1700</div>
+<div>     m_input    WebCore::HTMLInputStream    </div>
+<div>inputSource    WTF::RefPtr&lt;WTF::StringImpl&gt; &amp;&amp;    0x00007fff5fbfd358</div>
+<div><br/></div>
+<div>===</div>
+<div>★ append 函数最重要的是调用函数：</div>
+<div>pumpTokenizerIfPossible(AllowYield)</div>
+<div>进入上述函数：</div>
+<div>this    WebCore::HTMLDocumentParser *    0x1165f1700    0x00000001165f1700</div>
+<div>mode    WebCore::HTMLDocumentParser::SynchronousMode    AllowYield</div>
+<div>此函数最终调用：</div>
+<div>#0    0x000000010756e406 in WebCore::HTMLDocumentParser::pumpTokenizer(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:272</div>
+<div>===</div>
+</div>
+<div><br/></div>
+<div>见此时的调用栈：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_writer.addData.resources/C5BF61BA-84D5-4A3D-BD34-965BBC345C41.png" height="262" width="1118"/></div>
+<div><br/></div>
+<hr/>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010756e406 in WebCore::HTMLDocumentParser::pumpTokenizer(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:272</div>
+<div><br/></div>
+<div>关键上下文：</div>
+<div>this    WebCore::HTMLDocumentParser *    0x1165f1700    0x00000001165f1700</div>
+<div>     m_options    WebCore::HTMLParserOptions  </div>
+<div>     m_input    WebCore::HTMLInputStream    </div>
+<div>     m_tokenizer    WebCore::HTMLTokenizer    </div>
+<div>     m_xssAuditor    WebCore::XSSAuditor    </div>
+<div>mode    WebCore::HTMLDocumentParser::SynchronousMode    AllowYield</div>
+<div>session    WebCore::PumpSession    </div>
+<div>===</div>
+<div>★ 通过调用 m_xssAuditor.init(document(), &amp;m_xssAuditorDelegate) 来初始化 XSS 相关的安全策略：</div>
+<div>#0    0x00000001090ad82e in WebCore::XSSAuditor::init(WebCore::Document*, WebCore::XSSAuditorDelegate*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/XSSAuditor.cpp:352</div>
+<div>主要逻辑是通过读取：X-XSS-Protection 响应头头来获取初始化相关信息，具体可以参看此函数的细节。</div>
+<div>＝＝＝</div>
+<div>★ 调用：bool shouldResume = pumpTokenizerLoop(mode, isParsingFragment(), session) 来进入 loop 循环：</div>
+<div>#0    0x000000010756f367 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:229</div>
+<div>此函数内的关键上下文：</div>
+<div>this    WebCore::HTMLDocumentParser *    0x1165ce700    0x00000001165ce700</div>
+<div>     m_scriptRunner    std::__1::unique_ptr&lt;WebCore::HTMLScriptRunner,</div>
+<div>std::__1::default_delete&lt;WebCore::HTMLScriptRunner&gt; &gt;  </div>
+<div>     m_sourceTracker    WebCore::HTMLSourceTracker     </div>
+<div>mode    WebCore::HTMLDocumentParser::SynchronousMode    AllowYield</div>
+<div>parsingFragment    bool    false</div>
+<div>session    WebCore::PumpSession &amp;    0x00007fff5fbfcee0</div>
+<div>token    WebCore::HTMLTokenizer::TokenPtr    </div>
+</div>
+<div><br/></div>
+<div>来进入：WebCore::HTMLDocumentParser::pumpTokenizerLoop 函数一探究竟：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>此函数体内部是一个大的 while 循环体，循环体中：</div>
+<div><br/></div>
+<div>===</div>
+<div>★ 每次循环的开始，通过 WebCore::HTMLDocumentParser::isWaitingForScripts 来判断是不是刚刚解析完一个“&lt;/script&gt;”token：</div>
+<div>#0    0x0000000107570500 in WebCore::HTMLDocumentParser::isWaitingForScripts() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:480</div>
+<div>参看此函数中的注释：</div>
+<div>// When the TreeBuilder encounters a &lt;/script&gt; tag, it returns to the HTMLDocumentParser</div>
+<div>// where the script is transfered from the treebuilder to the script runner.</div>
+<div>// The script runner will hold the script until its loaded and run（dom解析暂停，等待script的运行）. During</div>
+<div>// any of this time, we want to count ourselves as "waiting for a script" and thus</div>
+<div>// run the preload scanner, as well as delay completion of parsing（在这段时间，标记为“waiting for a script”，并且运行preload scanner ，当然也会延后整体的完成时间）.</div>
+<div>// Since the parser is paused while a script runner has a blocking script, it should</div>
+<div>// never be possible to end up with both objects holding a blocking script.</div>
+<div>===</div>
+<div>★ 这里会通过 m_sourceTracker.startToken(m_input.current(), m_tokenizer) 来记录和更新当前代码解析到的位置</div>
+<div>===</div>
+<div>★★★ 这里很重要：通过 auto token = m_tokenizer.nextToken(m_input.current()) 函数，来通过状态机机制一个字符一个字符地处理当前的 input：</div>
+<div>#2    0x000000010756f5f1 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:251</div>
+<div>-&gt;</div>
+<div>#1    0x00000001075718df in WebCore::HTMLTokenizer::nextToken(WebCore::SegmentedString&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTokenizer.h:282</div>
+<div>-&gt;</div>
+<div>#0    0x0000000107674209 in WebCore::HTMLTokenizer::processToken(WebCore::SegmentedString&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTokenizer.cpp:276</div>
+<div>函数 bool HTMLTokenizer::processToken(SegmentedString&amp; source) 通过遵循下面链接中的 WHATWG 的 Tokenization 标准，解析 Token：</div>
+</div>
+<div><a href="https://html.spec.whatwg.org/#tokenization">https://html.spec.whatwg.org/#tokenization</a></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000107674209 in WebCore::HTMLTokenizer::processToken(WebCore::SegmentedString&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTokenizer.cpp:276</div>
+<div><br/></div>
+<div>this    WebCore::HTMLTokenizer *    0x1165ce7c8    0x00000001165ce7c8</div>
+<div>     m_state    WebCore::HTMLTokenizer::State    DataState</div>
+<div><br/></div>
+<div>通过不断扫描 input 中的 character ，来不断更新自身的 m_state 状态，进入不同的 State：</div>
+<div>
+<div>private:</div>
+<div>    enum State {</div>
+<div>        DataState,</div>
+<div>        CharacterReferenceInDataState,</div>
+</div>
+<div>        RCDATAState,</div>
+<div>...</div>
+<div><br/></div>
+<div>常用到的三个宏：</div>
+<div>BEGIN_STATE 判断当前状态</div>
+<div>ADVANCE_TO 状态更新</div>
+<div>RECONSUME_IN </div>
+<div>END_STATE</div>
+<div>SWITCH_TO 状态转移</div>
+</div>
+<div><br/></div>
+<div>下面几节，通过测试的 sample.html 文档，关键分析几个常见的 token 解析阶段：</div>
+<div>Doctype、html、head、style、body、script、&lt;/body&gt; 及其 &lt;/html&gt;</div>
+</body></html>

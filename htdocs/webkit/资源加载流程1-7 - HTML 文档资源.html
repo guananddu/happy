@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-19 02:33:30 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-19 06:11:06 +0000"/><title>资源加载流程1-7 - HTML 文档资源</title></head><body>
+<div>继续：【此节涉及了缓存的 LRU 淘汰算法】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000106bd5037 in WebCore::CachedResourceLoader::loadResource(WebCore::CachedResource::Type, WebCore::CachedResourceRequest&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/CachedResourceLoader.cpp:686</div>
+</div>
+<div><br/></div>
+<div>上节走完了创建 WebCore::CachedRawResource::CachedRawResource 对象的逻辑，继续往下走：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    CachedResourceHandle&lt;CachedResource&gt; resource = createResource(type, request.mutableResourceRequest(), request.charset(), sessionID());</div>
+<div>    // 上面一行表示 resource 已经准备就绪</div>
+<div>    // 此句判断只关心后面的 memoryCache.add</div>
+<div>
+<div>    if (request.allowsCaching() &amp;&amp; !memoryCache.add(*resource))</div>
+<div>        resource-&gt;setOwningCachedResourceLoader(this);</div>
+<div>    if (RuntimeEnabledFeatures::sharedFeatures().resourceTimingEnabled())</div>
+<div>        storeResourceTimingInitiatorInformation(resource, request);</div>
+<div>    return resource;</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div>看下这个 memoryCache.add 函数的调用情况：（LRU）</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010827ed87 in WebCore::MemoryCache::add(WebCore::CachedResource&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/MemoryCache.cpp:107</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>bool MemoryCache::add(CachedResource&amp; resource)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    //     m_disabled    bool    false</div>
+<div>    // resource    WebCore::CachedRawResource &amp;    0x0000000115fce000</div>
+<div>    // key    std::__1::pair&lt;WebCore::URL, WTF::String&gt;   </div>
+<div>
+<div>    if (disabled())</div>
+<div>        return false;</div>
+<div><br/></div>
+<div>    ASSERT(WTF::isMainThread());</div>
+<div><br/></div>
+<div>#if ENABLE(CACHE_PARTITIONING)</div>
+<div>    auto key = std::make_pair(resource.url(), resource.cachePartition());</div>
+<div>#else</div>
+<div>    auto&amp; key = resource.url();</div>
+</div>
+<div>#endif</div>
+<div>    // 首先根据 sessionID 来确定好当前的 HashMap，获取到之后，开始设置值</div>
+<div>    ensureSessionResourceMap(resource.sessionID()).set(key, &amp;resource);</div>
+<div>    // 同时标记 resource 已经被置入缓存</div>
+<div>    resource.setInCache(true);</div>
+<div>    </div>
+<div>    // 维护 resource 的 accessCount ，并且为 resource LRU （申请空间）并且存入对应的 LRU</div>
+<div>
+<div>    resourceAccessed(resource);</div>
+<div><br/></div>
+<div>    LOG(ResourceLoading, "MemoryCache::add Added '%s', resource %p\n", resource.url().string().latin1().data(), &amp;resource);</div>
+<div>    return true;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>auto MemoryCache::ensureSessionResourceMap(SessionID sessionID) -&gt; CachedResourceMap&amp;</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // sessionID    WebCore::SessionID  </div>
+<div>    //      m_sessionID    uint64_t    1</div>
+<div>    // m_sessionResources    WebCore::MemoryCache::SessionCachedResourceMap     </div>
+<div>    ASSERT(sessionID.isValid());</div>
+<div>    // map    std::__1::unique_ptr&lt;WTF::HashMap&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt;, WebCore::CachedResource *, WTF::PairHash&lt;WebCore::URL, WTF::String&gt;, WTF::HashTraits&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt; &gt;, WTF::HashTraits&lt;WebCore::CachedResource *&gt; &gt;, std::__1::default_delete&lt;WTF::HashMap&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt;, WebCore::CachedResource *, WTF::PairHash&lt;WebCore::URL, WTF::String&gt;, WTF::HashTraits&lt;std::__1::pair&lt;WebCore::URL, WTF::String&gt; &gt;, WTF::HashTraits&lt;WebCore::CachedResource *&gt; &gt; &gt; &gt; &amp;    0x000000011559e898</div>
+<div>
+<div>    auto&amp; map = m_sessionResources.add(sessionID, nullptr).iterator-&gt;value;</div>
+<div>    if (!map)</div>
+</div>
+<div>        map = std::make_unique&lt;CachedResourceMap&gt;();</div>
+<div>    // 把这个 HashMap 返回了？</div>
+<div>    // 可以理解为根据 sessionID 来创建一个 HashMap 作为此 sessionID Page 的缓存表</div>
+<div>
+<div>    return *map;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>m_sessionResources 类型定义：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    // A URL-based map of all resources that are in the cache (including the freshest version of objects that are currently being</div>
+<div>    // referenced by a Web page).</div>
+<div>    typedef HashMap&lt;SessionID, std::unique_ptr&lt;CachedResourceMap&gt;&gt; SessionCachedResourceMap;</div>
+<div>    SessionCachedResourceMap m_sessionResources;</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010827efc2 in WebCore::MemoryCache::resourceAccessed(WebCore::CachedResource&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/MemoryCache.cpp:507</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void MemoryCache::resourceAccessed(CachedResource&amp; resource)</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // resource    WebCore::CachedRawResource &amp;    0x0000000115fce000</div>
+<div>
+<div>    ASSERT(resource.inCache());</div>
+<div><br/></div>
+<div>    // Need to make sure to remove before we increase the access count, since</div>
+</div>
+<div>    // the queue will possibly change.</div>
+<div>    // 直接返回</div>
+<div>
+<div>    removeFromLRUList(resource);</div>
+<div><br/></div>
+</div>
+<div>    // If this is the first time the resource has been accessed, adjust the size of the cache to account for its initial size.</div>
+<div>    // 的确是第一次</div>
+<div>    if (!resource.accessCount())</div>
+<div>        // 见下</div>
+<div>
+<div>        adjustSize(resource.hasClients(), resource.size());</div>
+<div><br/></div>
+</div>
+<div>    // Add to our access count.</div>
+<div>    // accessCount ++</div>
+<div>
+<div>    resource.increaseAccessCount();</div>
+<div><br/></div>
+<div>    // Now insert into the new queue.</div>
+</div>
+<div>    insertInLRUList(resource);</div>
+<div>    // 主要是这个语句：auto addResult = lruListFor(resource).add(&amp;resource);</div>
+<div>    // 最终返回：</div>
+<div>    // addResult    WTF::HashTableAddResult&lt;WTF::ListHashSetIterator&lt;WebCore::CachedResource *, WTF::PtrHash&lt;WebCore::CachedResource *&gt; &gt; &gt;   </div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void MemoryCache::removeFromLRUList(CachedResource&amp; resource)</div>
+<div>{</div>
+</div>
+<div>    // If we've never been accessed, then we're brand new and not in any list.</div>
+<div>    // 初次创建的 resource 自身的 accessCount 为 0</div>
+<div>    // m_accessCount    unsigned int    0</div>
+<div>    // 所以直接返回了</div>
+<div>
+<div>    if (!resource.accessCount())</div>
+</div>
+<div>        return;</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void MemoryCache::adjustSize(bool live, int delta)</div>
+</div>
+<div>{</div>
+<div>    // m_liveSize 和 m_deadSize 记录当前的缓存“体积”</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // live    bool    false</div>
+<div>    // delta    int    5824</div>
+<div>
+<div>    if (live) {</div>
+</div>
+<div>        ASSERT(delta &gt;= 0 || ((int)m_liveSize + delta &gt;= 0));</div>
+<div>        // m_liveSize    unsigned int    6423</div>
+<div>
+<div>        m_liveSize += delta;</div>
+<div>    } else {</div>
+</div>
+<div>        ASSERT(delta &gt;= 0 || ((int)m_deadSize + delta &gt;= 0));</div>
+<div>        // m_deadSize    unsigned int    266031</div>
+<div>
+<div>        m_deadSize += delta;</div>
+<div>    }</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001082810fe in WebCore::MemoryCache::lruListFor(WebCore::CachedResource&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/cache/MemoryCache.cpp:464</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>auto MemoryCache::lruListFor(CachedResource&amp; resource) -&gt; LRUList&amp;</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::MemoryCache *    0x109f53520    0x0000000109f53520</div>
+<div>    // resource    WebCore::CachedRawResource &amp;    0x0000000115fce000</div>
+<div>    // accessCount    unsigned int    1</div>
+<div>    // queueIndex    unsigned int    13</div>
+<div>    unsigned accessCount = std::max(resource.accessCount(), 1U);</div>
+<div>    // 可以理解为，resource 的 size 越大；accessCount 越小 -&gt; queueIndex 就越大【越靠后】</div>
+<div>    // size 越小；accessCount 越大 -&gt; queueIndex 就越小【越靠前】</div>
+<div>
+<div>    unsigned queueIndex = WTF::fastLog2(resource.size() / accessCount);</div>
+</div>
+<div>#ifndef NDEBUG</div>
+<div>    // 设置 m_lruIndex</div>
+<div>
+<div>    resource.m_lruIndex = queueIndex;</div>
+</div>
+<div>#endif</div>
+<div>    // m_allResources    WTF::Vector&lt;std::__1::unique_ptr&lt;WTF::ListHashSet&lt;WebCore::CachedResource *, WTF::PtrHash&lt;WebCore::CachedResource *&gt; &gt;, std::__1::default_delete&lt;WTF::ListHashSet&lt;WebCore::CachedResource *, WTF::PtrHash&lt;WebCore::CachedResource *&gt; &gt; &gt; &gt;, 32, WTF::CrashOnOverflow, 16&gt;  </div>
+<div>    // 申请足够的存储空间；其他语言有类似的功能，看下面的截图，应该是同样的原理</div>
+<div>    m_allResources.reserveCapacity(queueIndex + 1);</div>
+<div>    // 这里测得 m_allResources.size() == 18</div>
+<div>    // 如果 size 不够，则 append 新元素</div>
+<div>
+<div>    while (m_allResources.size() &lt;= queueIndex)</div>
+</div>
+<div>        m_allResources.uncheckedAppend(std::make_unique&lt;LRUList&gt;());</div>
+<div>    // m_allResources 中存储了所有的 LRU list 的集合，返回要使用的 LRU list</div>
+<div>
+<div>    return *m_allResources[queueIndex];</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-7%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/4E85107B-8D92-4D8A-8192-F8BEDE3E5D3A.png" height="494" width="2006"/></div>
+<div>关于 MemoryCache 的 m_allResources：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    typedef ListHashSet&lt;CachedResource*&gt; LRUList;</div>
+<div><br/></div>
+<div>    // Size-adjusted and popularity-aware LRU list collection【一个 LRU list 的集合】 for cache objects.  This collection can hold</div>
+<div>
+<div>    // more resources than the cached resource map, since it can also hold "stale" multiple versions of objects that are</div>
+<div>    // waiting to die when the clients referencing them go away.</div>
+<div>    Vector&lt;std::unique_ptr&lt;LRUList&gt;, 32&gt; m_allResources;</div>
+</div>
+</div>
+<div><br/></div>
+<div>至此，memoryCache.add(*resource)) 函数调用完毕，并且正常情况下返回 true</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>继续往下：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    // 摘录：</div>
+<div>    // this    const WebCore::RuntimeEnabledFeatures *    0x109f578a1    0x0000000109f578a1</div>
+<div>    //      m_isResourceTimingEnabled    bool    false </div>
+<div>    // bool resourceTimingEnabled() const { return m_isResourceTimingEnabled; } </div>
+<div>    if (RuntimeEnabledFeatures::sharedFeatures().resourceTimingEnabled())</div>
+<div>
+<div>        storeResourceTimingInitiatorInformation(resource, request);</div>
+<div>    return resource;</div>
+</div>
+</div>
+<div><br/></div>
+<div>更多 RuntimeEnabledFeatures：</div>
+<div><br/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-7%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/F79EB54D-F7ED-4C1D-90EF-80DE9FD541C9.png" height="980" width="1830"/></div>
+</body></html>

@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="altitude" content="55.06753812636165"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-19 09:15:08 +0000"/><meta name="latitude" content="39.97078"/><meta name="longitude" content="116.3234033333333"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-19 12:53:29 +0000"/><title>C/C++ 模块的加载1</title></head><body>
+<div>
+<div>此节分析 NodeJS 中的 c/c++ 模块的加载和相关函数，至于由 js 编写的 native 模块的加载在 Nodejs 的启动流程分析中已经提到过。</div>
+<div><br/></div>
+<div>源文件编译相关的列表定义，见：node.gyp 配置文件：</div>
+<div>variables.library_files 定义了 native 模块的 js 模块源代码；而在 targets 字段中则有一个 target 记录了所有的 c/c++ 源代码列表：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>...</div>
+<div>  'targets': [</div>
+<div>    {</div>
+<div>      'target_name': '&lt;(node_core_target_name)',</div>
+<div>      'type': '&lt;(node_target_type)',</div>
+<div><br/></div>
+<div>      'dependencies': [</div>
+<div>        'node_js2c#host',</div>
+<div>      ],</div>
+<div><br/></div>
+<div>      'include_dirs': [</div>
+<div>        'src',</div>
+<div>        'tools/msvs/genfiles',</div>
+<div>        'deps/uv/src/ares',</div>
+<div>        '&lt;(SHARED_INTERMEDIATE_DIR)', # for node_natives.h</div>
+<div>      ],</div>
+<div><br/></div>
+<div>      'sources': [</div>
+<div>        'src/<a dir="ltr" href="http://debug-agent.cc">debug-agent.cc</a>',</div>
+<div>        'src/<a dir="ltr" href="http://async-wrap.cc">async-wrap.cc</a>',</div>
+<div>        'src/<a dir="ltr" href="http://env.cc">env.cc</a>',</div>
+<div>        'src/fs_event_wrap.cc',</div>
+<div>        'src/cares_wrap.cc',</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>那鉴于这些编译单元按照文件形式被编译，那么 c/c++ 的模块又是怎么被定义的呢？</div>
+<div>我们仍旧以：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x000000010006a61e in main at /Users/mrguan/work/build/node/node-6.6.0/src/node_main.cc:57</div>
+<div><br/></div>
+<div>也就是 main 函数为断点来进行分析</div>
+</div>
+<div><br/></div>
+<div>按照 sources 的列表，我们就先拿 src/<a dir="ltr" href="http://async-wrap.cc">async-wrap.cc</a> 来分析，看最后一行：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>NODE_MODULE_CONTEXT_AWARE_BUILTIN(async_wrap, node::Initialize)</div>
+<div><br/></div>
+<div>这是一个宏定义，async_wrap 为普通字符串来传递；node::Initialize 则为初始化函数，见下代码段：</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 注意这里的三个参数</div>
+<div>static void Initialize(Local&lt;Object&gt; target,</div>
+<div>
+<div>                Local&lt;Value&gt; unused,</div>
+</div>
+<div>                Local&lt;Context&gt; context) {</div>
+<div>  // 获取相关环境参数</div>
+<div>
+<div>  Environment* env = Environment::GetCurrent(context);</div>
+<div>  Isolate* isolate = env-&gt;isolate();</div>
+</div>
+<div>  HandleScope scope(isolate);</div>
+<div>  // 开始为“目标对象”设置方法</div>
+<div>
+<div>  env-&gt;SetMethod(target, "setupHooks", SetupHooks);</div>
+<div>  env-&gt;SetMethod(target, "disable", DisableHooksJS);</div>
+</div>
+<div>  env-&gt;SetMethod(target, "enable", EnableHooksJS);</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>上述函数不算分析的重点，我们来看看上面的 NODE_MODULE_CONTEXT_AWARE_BUILTIN 宏：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>#define NODE_MODULE_CONTEXT_AWARE_BUILTIN(modname, regfunc)           \</div>
+</div>
+<div>  NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, NULL, NM_F_BUILTIN)   \</div>
+<div><br/></div>
+<div><br/></div>
+<div>
+<div>#define NM_F_BUILTIN 0x01</div>
+<div>#define NM_F_LINKED  0x02</div>
+</div>
+<div>/// 以下为手动展开：</div>
+<div>NODE_MODULE_CONTEXT_AWARE_X(async_wrap, node::Initialize, NULL, NM_F_BUILTIN)</div>
+<div><br/></div>
+<div>// 相关宏定义</div>
+<div>
+<div>/**</div>
+<div> * When this version number is changed, node.js will refuse</div>
+<div> * to load older modules.  This should be done whenever</div>
+<div> * an API is broken in the C++ side, including in v8 or</div>
+<div> * other dependencies.</div>
+<div> */</div>
+</div>
+<div>#define NODE_MODULE_VERSION 48 /* Node.js v6.0.0 */</div>
+<div>
+<div>#ifndef NODE_STRINGIFY</div>
+<div>#define NODE_STRINGIFY(n) NODE_STRINGIFY_HELPER(n)</div>
+<div>#define NODE_STRINGIFY_HELPER(n) #n</div>
+<div>#endif</div>
+</div>
+<div>/// 展开后仍旧是个宏，接着展开：</div>
+<div>
+<div>#define NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, priv, flags)    \</div>
+<div>  extern "C" {                                                        \</div>
+<div>    static node::node_module _module =                                \</div>
+<div>    {                                                                 \</div>
+<div>      NODE_MODULE_VERSION,                                            \</div>
+<div>      flags,                                                          \</div>
+<div>      NULL,                                                           \</div>
+<div>      __FILE__,                                                       \</div>
+<div>      NULL,                                                           \</div>
+<div>      (node::addon_context_register_func) (regfunc),                  \</div>
+<div>      NODE_STRINGIFY(modname),                                        \</div>
+<div>      priv,                                                           \</div>
+<div>      NULL                                                            \</div>
+<div>    };                                                                \</div>
+<div>    NODE_C_CTOR(_register_ ## modname) {                              \</div>
+<div>      node_module_register(&amp;_module);                                 \</div>
+<div>    }                                                                 \</div>
+</div>
+<div>  }</div>
+<div><br/></div>
+<div>/// 展开后为一段代码：</div>
+<div>extern "C" {                                                        </div>
+<div>  static node::node_module _module =                                </div>
+<div>  {                                                                 </div>
+<div>    NODE_MODULE_VERSION,                                            </div>
+<div>    NM_F_BUILTIN,                                                          </div>
+<div>    NULL,                                                           </div>
+<div>    __FILE__,                                                       </div>
+<div>    NULL,                                                           </div>
+<div>    (node::addon_context_register_func) (node::Initialize),                  </div>
+<div>    NODE_STRINGIFY(async_wrap),                                        </div>
+<div>    NULL,                                                           </div>
+<div>    NULL                                                            </div>
+<div>  };                                                                </div>
+<div>  NODE_C_CTOR(_register_async_wrap) {                              </div>
+<div>    node_module_register(&amp;_module);                                 </div>
+<div>  }                                                                 </div>
+<div>}</div>
+<div><br/></div>
+<div>
+<div>#define NODE_C_CTOR(fn)                                               \</div>
+<div>  NODE_CTOR_PREFIX void fn(void) __attribute__((constructor));        \</div>
+<div>  NODE_CTOR_PREFIX void fn(void)</div>
+<div>#endif</div>
+</div>
+<div>/// 仍旧是有个 NODE_C_CTOR 宏，展开后为：</div>
+<div>NODE_CTOR_PREFIX void _register_async_wrap(void) __attribute__((constructor));</div>
+<div>NODE_CTOR_PREFIX void _register_async_wrap(void) {</div>
+<div>  node_module_register(&amp;_module);</div>
+<div>}</div>
+<div><br/></div>
+<div>
+<div>#ifdef NODE_SHARED_MODE</div>
+<div># define NODE_CTOR_PREFIX</div>
+</div>
+<div>#else</div>
+<div># define NODE_CTOR_PREFIX static 【非win平台走这里】</div>
+<div>#endif</div>
+<div><br/></div>
+<div>NODE_SHARED_MODE 是一个预定义变量，在 node.gyp 中可以搜索到：</div>
+<div>...</div>
+<div>'conditions': [</div>
+<div>  [ 'node_shared=="false"', {</div>
+<div>    'msvs_settings': {</div>
+<div>      'VCManifestTool': {</div>
+<div>        'EmbedManifest': 'true',</div>
+<div>        'AdditionalManifestFiles': 'src/res/node.exe.extra.manifest'</div>
+<div>      }</div>
+<div>    },</div>
+<div>  }, {// 目测是非win平台就会被定义</div>
+<div>    'defines': [</div>
+<div>      'NODE_SHARED_MODE',</div>
+<div>    ],</div>
+<div>    'conditions': [</div>
+<div>      [ 'node_module_version!="" and OS!="win"', {</div>
+<div>        'product_extension': '&lt;(shlib_suffix)',</div>
+<div>      }]</div>
+<div>    ],</div>
+<div>  }],</div>
+<div>...</div>
+<div>/// 卧槽，最最终展开为：</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// 为了表示清楚，另开代码块</div>
+<div>// 这就是 async-wrap 模块的注册代码展开式</div>
+<div><br/></div>
+<div>extern "C" {</div>
+<div>
+<div>  static node::node_module _module =</div>
+<div>  {</div>
+<div>    NODE_MODULE_VERSION,</div>
+<div>    NM_F_BUILTIN,</div>
+<div>    NULL,</div>
+<div>    __FILE__,</div>
+<div>    NULL,</div>
+<div>    (node::addon_context_register_func) (node::Initialize),</div>
+<div>    NODE_STRINGIFY(async_wrap),</div>
+<div>    NULL,</div>
+<div>    NULL</div>
+<div>  };</div>
+<div>  static void _register_async_wrap(void) __attribute__((constructor));</div>
+<div>  static void _register_async_wrap(void) {</div>
+<div>    node_module_register(&amp;_module);</div>
+<div>  }</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>extern “C" 的相关解释见：<a href="http://www.cnblogs.com/skynet/archive/2010/07/10/1774964.html">http://www.cnblogs.com/skynet/archive/2010/07/10/1774964.html</a></div>
+<div>里面介绍的很详细，一句话总结：</div>
+<div><u>extern "C"的真实目的是实现类C和C++的混合编程。在C++源文件中的语句前面加上extern "C"，表明它按照类C的编译和连接规约来编译和连接，而不是C++的编译的连接规约。这样在类C的代码中就可以调用C++的函数or变量等。（注：在这里所说的类C，代表的是跟C语言的编译和连接方式一致的所有语言）</u></div>
+<div><br/></div>
+<div>node::node_module 的定义：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// node/Source/src/node.h line397</div>
+<div>struct node_module {</div>
+<div>
+<div>  int nm_version;</div>
+<div>  unsigned int nm_flags;</div>
+<div>  void* nm_dso_handle;</div>
+<div>  const char* nm_filename;</div>
+<div>  node::addon_register_func nm_register_func;</div>
+<div>  node::addon_context_register_func nm_context_register_func;</div>
+<div>  const char* nm_modname;</div>
+</div>
+<div>  void* nm_priv;</div>
+<div>  // 指向“下一个” node_module</div>
+<div>
+<div>  struct node_module* nm_link;</div>
+<div>};</div>
+</div>
+</div>
+<div><br/></div>
+<div>即，定义了一个 node::node_module 类型的变量：_module，并且传入初始值：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>  {</div>
+<div>    NODE_MODULE_VERSION, // nm_version</div>
+<div>    NM_F_BUILTIN,</div>
+<div>    NULL,</div>
+<div>    __FILE__, // nm_filename</div>
+<div>    NULL,</div>
+<div>    // node::addon_context_register_func nm_context_register_func;</div>
+<div>    (node::addon_context_register_func) (node::Initialize),</div>
+<div>    NODE_STRINGIFY(async_wrap), // nm_modname</div>
+<div>
+<div>    NULL,</div>
+<div>    NULL</div>
+<div>  }</div>
+</div>
+</div>
+<div><br/></div>
+<div>__attribute__((constructor)) 的相关介绍见：<a href="http://www.cnblogs.com/respawn/archive/2012/07/09/2582078.html">http://www.cnblogs.com/respawn/archive/2012/07/09/2582078.html</a></div>
+<div>总之一句话：</div>
+<div><u>__attribute__((constructor)) 在main() 之前执行,__attribute__((destructor)) 在main()执行结束之后执行</u></div>
+<div>再看看 GNU 官网的说明：<a href="https://gcc.gnu.org/onlinedocs/gcc-4.3.0/gcc/Function-Attributes.html">https://gcc.gnu.org/onlinedocs/gcc-4.3.0/gcc/Function-Attributes.html</a></div>
+<div><u>The constructor attribute causes the function to be called automatically before execution enters main (). Similarly, the destructor attribute causes the function to be called automatically after main () has completed or exit () has been called. Functions with these attributes are useful for initializing data that will be used implicitly during the execution of the program.</u></div>
+<div><u>You may provide an optional integer priority to control the order in which constructor and destructor functions are run. A constructor with a smaller priority number runs before a constructor with a larger priority number; the opposite relationship holds for destructors. So, if you have a constructor that allocates a resource and a destructor that deallocates the same resource, both functions typically have the same priority. The priorities for constructor and destructor functions are the same as those specified for namespace-scope C++ objects (see C++ Attributes).</u></div>
+<div><br/></div>
+<div>因此可以推断，在 nodejs 的 main 函数执行之前，这些模块注册函数就会被依次执行。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>再来看看 node_module_register(&amp;_module) 函数调用：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// node/Source/src/<a dir="ltr" href="http://node.cc">node.cc</a></div>
+<div><br/></div>
+<div>// 静态</div>
+<div>
+<div>static node_module* modpending;</div>
+<div>static node_module* modlist_builtin;</div>
+<div>static node_module* modlist_linked;</div>
+<div>static node_module* modlist_addon;</div>
+</div>
+<div><br/></div>
+<div>// 我们在此函数中打上断点来观察</div>
+<div>extern "C" void node_module_register(void* m) {</div>
+<div>  // 指针转化</div>
+<div>  struct node_module* mp = reinterpret_cast&lt;struct node_module*&gt;(m);</div>
+<div><br/></div>
+<div>  // 下面的列表是 async_wrap 模块被注册时候的切面截图</div>
+<div>  // mp    node::node_module *    0x101aceb20    0x0000000101aceb20</div>
+<div>  //     nm_version    int    48</div>
+<div>  //     nm_flags    unsigned int    1</div>
+<div>  //     nm_filename    const char *    "/Users/mrguan/work/build/node/node-6.6.0/src/<a dir="ltr" href="http://async-wrap.cc">async-wrap.cc</a>"    0x000000010110cfad</div>
+<div>  //     nm_register_func    node::addon_register_func    0x0    0x0000000000000000</div>
+<div>  //     nm_context_register_func    node::addon_context_register_func    (node`node::Initialize(v8::Local&lt;v8::Object&gt;, v8::Local&lt;v8::Value&gt;, v8::Local&lt;v8::Context&gt;) at <a dir="ltr" href="http://async-wrap.cc:160">async-wrap.cc:160</a>)    0x00000001000064a0</div>
+<div>  //     nm_modname    const char *    "async_wrap"    0x000000010110d2d4</div>
+<div>  //     nm_priv    void *    NULL    0x0000000000000000</div>
+<div>  //     nm_link    node::node_module *    NULL    0x0000000000000000</div>
+<div>  // 默认来看，从 main 函数之前加载的模块都是 NM_F_BUILTIN 类型的</div>
+<div>  if (mp-&gt;nm_flags &amp; NM_F_BUILTIN) {</div>
+<div>    // 会走入此分支</div>
+<div>
+<div>    mp-&gt;nm_link = modlist_builtin;</div>
+</div>
+<div>    modlist_builtin = mp;</div>
+<div>  // 下面的分支不再走入</div>
+<div>
+<div>  } else if (!node_is_initialized) {</div>
+<div>    // "Linked" modules are included as part of the node project.</div>
+<div>    // Like builtins they are registered *before* node::Init runs.</div>
+<div>    mp-&gt;nm_flags = NM_F_LINKED;</div>
+<div>    mp-&gt;nm_link = modlist_linked;</div>
+<div>    modlist_linked = mp;</div>
+<div>  } else {</div>
+<div>    modpending = mp;</div>
+<div>  }</div>
+<div>}</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div>最终形成一个模块链表，且表头是 modlist_builtin，如下图：</div>
+<div><img src="C_C++%20%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%A0%E8%BD%BD1.resources/Evernote%20Camera%20Roll%2020161019%20205059.jpg" height="3024" width="4032"/></div>
+<div><br/></div>
+<div><br/></div>
+</body></html>

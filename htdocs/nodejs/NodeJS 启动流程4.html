@@ -1,0 +1,674 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-14 09:16:08 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-18 09:21:37 +0000"/><title>NodeJS 启动流程4</title></head><body>
+<div>
+<div>衔接上一节，此节和上一节时间相差了不少，上一节的时候，分析完毕了 uv_default_loop 函数的调用阶段，主要做的是各种平台环境的初始化，以及 loop 的初始化。再次回到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002aa6d in node::Init(int*, char const**, int*, char const***) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4257</div>
+</div>
+<div><br/></div>
+<div>进入 uv_now 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>uint64_t uv_now(const uv_loop_t* loop) {</div>
+<div>  // 在 uv__update_time 中被初始化</div>
+<div>
+<div>  return loop-&gt;time;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void Init(int* argc,</div>
+<div>          const char** argv,</div>
+<div>          int* exec_argc,</div>
+</div>
+<div>          const char*** exec_argv) {</div>
+<div>  // 记录进程启动时间点【主要是计算相对时间】</div>
+<div>
+<div>  // Initialize prog_start_time to get relative uptime.</div>
+</div>
+<div>  prog_start_time = static_cast&lt;double&gt;(uv_now(uv_default_loop()));</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>函数：uv_disable_stdio_inheritance 的作用如其注释所示，注释能看懂，但是原理不大懂，底层调用到了 ioctl 函数；</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div>再往下，遇到：</div>
+<div>  // init async debug messages dispatching</div>
+<div>  // Main thread uses uv_default_loop</div>
+<div>一下语句同样是通过 uv_async_init 函数，将 async 相关的异步任务“绑定”到 loop 上，uv_async_init 函数的细节具体不再分析，但是需要注意这里需要处理的异步节点是和“调试”相关的。</div>
+<div><br/></div>
+<div>紧接着，进入参数解析阶段（具体细节不再赘述）：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>  // Parse a few arguments which are specific to Node.</div>
+<div>  int v8_argc;</div>
+<div>  const char** v8_argv;</div>
+<div>  ParseArgs(argc, argv, exec_argc, exec_argv, &amp;v8_argc, &amp;v8_argv);</div>
+</div>
+</div>
+<div><br/></div>
+<div>下面的语句调用 V8 API，来设置 flag，目的见注释（和 typed array 的内存 allocate 相关）：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>  // Unconditionally force typed arrays to allocate outside the v8 heap. This</div>
+<div>  // is to prevent memory pointers from being moved around that are returned by</div>
+<div>  // Buffer::Data().</div>
+<div>  const char no_typed_array_heap[] = "--typed_array_max_size_in_heap=0";</div>
+<div>  V8::SetFlagsFromString(no_typed_array_heap, sizeof(no_typed_array_heap) - 1);</div>
+</div>
+</div>
+<div><br/></div>
+<div>再往下，通过判断 use_debug_agent 标记，判断是不是已经准备好“调试服务线程”：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>  if (!use_debug_agent) {</div>
+<div>    RegisterDebugSignalHandler();</div>
+</div>
+<div>  }</div>
+</div>
+<div><br/></div>
+<div>待运行完：RegisterDebugSignalHandler 函数之后，可以在 XCODE 的断点窗口中，看到被新建的线程：</div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B4.resources/C0DE461E-D7B6-4D18-AE2B-CADA27C95A55.png" height="510" width="654"/></div>
+<div><br/></div>
+<div>看下：Thread2 的代码细节 1 和 2 （涉及“信号量”这个概念）：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#2    0x000000010002fa68 in node::DebugSignalThreadMain(void*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:3975</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>inline void* DebugSignalThreadMain(void* unused) {</div>
+</div>
+<div>  for (;;) {</div>
+<div>    // 循环在此语句</div>
+<div>
+<div>    uv_sem_wait(&amp;debug_semaphore);</div>
+<div>    TryStartDebugger();</div>
+<div>  }</div>
+<div>  return nullptr;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x000000010102c267 in uv_sem_wait at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/thread.c:280</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void uv_sem_wait(uv_sem_t* sem) {</div>
+<div>  int r;</div>
+<div><br/></div>
+<div>  do</div>
+<div>    r = semaphore_wait(*sem);</div>
+<div>  while (r == KERN_ABORTED);</div>
+<div><br/></div>
+<div>  if (r != KERN_SUCCESS)</div>
+<div>    abort();</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+</div>
+<div>在 Init 函数执行的最后，标记 node_is_initialized = true ：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>  // We should set node_is_initialized here instead of in node::Start,</div>
+<div>  // otherwise embedders using node::Init to initialize everything will not be</div>
+<div>  // able to set it and native modules will not load for them.</div>
+<div>  node_is_initialized = true;</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>跳出 Init 函数的执行流，进入上级的 node::Start 函数，继续往下：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>#if HAVE_OPENSSL</div>
+<div>#ifdef NODE_FIPS_MODE</div>
+<div>  // In the case of FIPS builds we should make sure</div>
+<div>  // the random source is properly initialized first.</div>
+<div>  OPENSSL_init();</div>
+<div>#endif  // NODE_FIPS_MODE</div>
+<div>  // V8 on Windows doesn't have a good source of entropy. Seed it from</div>
+</div>
+<div>  // OpenSSL's pool.</div>
+<div>  // 走此分支【什么是信源熵的概念？暂时不再深究，要理解的太多了】</div>
+<div>
+<div>  V8::SetEntropySource(crypto::EntropySource);</div>
+<div>#endif</div>
+</div>
+</div>
+<div><br/></div>
+<div>进入：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#1    0x000000010002c825 in node::Start(int, char**) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4665</div>
+<div>此行的下列函数：</div>
+<div><br/></div>
+<div>
+<div>// static const int v8_default_thread_pool_size = 4;</div>
+</div>
+<div>// static int v8_thread_pool_size = v8_default_thread_pool_size;</div>
+<div><br/></div>
+<div>v8_platform.Initialize(v8_thread_pool_size); </div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>static struct {</div>
+<div>#if NODE_USE_V8_PLATFORM</div>
+</div>
+<div>  void Initialize(int thread_pool_size) {</div>
+<div>    // thread_pool_size    int    4</div>
+<div>    // this    node::(anonymous struct) *    0x101afd980    0x0000000101afd980</div>
+<div>    // 创建 v8 “平台”，同时初始化好4个v8子线程（进程？）（此函数细节见下，不再深究）</div>
+<div>    // 此函数执行完毕后的左侧进程截图见下</div>
+<div>
+<div>    platform_ = v8::platform::CreateDefaultPlatform(thread_pool_size);</div>
+<div>    V8::InitializePlatform(platform_);</div>
+</div>
+<div>  }</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B4.resources/35CFF531-61FC-4258-BD84-0E50EA3869C9.png" height="488" width="656"/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>v8::Platform* CreateDefaultPlatform(int thread_pool_size) {</div>
+<div>  DefaultPlatform* platform = new DefaultPlatform();</div>
+<div>  platform-&gt;SetThreadPoolSize(thread_pool_size);</div>
+<div>  platform-&gt;EnsureInitialized();</div>
+<div>  return platform;</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>最终调用：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001003198bc in v8::V8::InitializePlatform(v8::Platform*) at /Users/mrguan/work/build/node/node-6.6.0/deps/v8/src/api.cc:5503</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// V8 API函数</div>
+<div>void v8::V8::InitializePlatform(Platform* platform) {</div>
+<div>
+<div>  i::V8::InitializePlatform(platform);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>最后调入代码块：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>  int exit_code = 1;</div>
+</div>
+<div>  {</div>
+<div>    // 初始化实例数据</div>
+<div>    // argc    int    2</div>
+<div>    // exec_argc    int    0</div>
+<div>    // *exec_argv    const char *    NULL    0x0000000000000000</div>
+<div>    // exit_code    int    1</div>
+<div>    // instance_data    node::NodeInstanceData  </div>
+<div>    //      node_instance_type_    const node::NodeInstanceType    MAIN</div>
+<div>    //      use_debug_agent_flag_    const bool    false</div>
+<div>    //      ... </div>
+<div>
+<div>    NodeInstanceData instance_data(NodeInstanceType::MAIN,</div>
+<div>                                   uv_default_loop(),</div>
+<div>                                   argc,</div>
+<div>                                   const_cast&lt;const char**&gt;(argv),</div>
+<div>                                   exec_argc,</div>
+<div>                                   exec_argv,</div>
+<div>                                   use_debug_agent);</div>
+<div>    StartNodeInstance(&amp;instance_data);</div>
+<div>    exit_code = instance_data.exit_code();</div>
+<div>  }</div>
+</div>
+</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B4.resources/D6E955A6-2973-4478-921B-0075C09EBFB6.png" height="224" width="930"/></div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002cc72 in node::NodeInstanceData::NodeInstanceData(node::NodeInstanceType, uv_loop_s*, int, char const**, int, char const**, bool) at /Users/mrguan/work/build/node/node-6.6.0/src/node_internals.h:232</div>
+<div><br/></div>
+<div>NodeInstanceData 被初始化的位置（c++）</div>
+</div>
+<div><br/></div>
+<div>★进入：StartNodeInstance 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002c87a in node::Start(int, char**) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4677</div>
+<div>goto:</div>
+<div>#0    0x000000010002ccc3 in node::StartNodeInstance(void*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4536</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>// Entry point for new node instances, also called directly for the main</div>
+<div>// node instance.node实例启动点</div>
+<div>static void StartNodeInstance(void* arg) {</div>
+<div>  // 恢复 NodeInstanceData</div>
+<div>  NodeInstanceData* instance_data = static_cast&lt;NodeInstanceData*&gt;(arg);</div>
+<div>  // 创建 Isolate 参数</div>
+<div>  Isolate::CreateParams params;</div>
+<div>  // 创建 ArrayBuffer 的生成器</div>
+<div>  ArrayBufferAllocator* array_buffer_allocator = new ArrayBufferAllocator();</div>
+<div>  // 赋给参数</div>
+<div>  params.array_buffer_allocator = array_buffer_allocator;</div>
+<div>#ifdef NODE_ENABLE_VTUNE_PROFILING // 不走</div>
+<div>
+<div>  params.code_event_handler = vTune::GetVtuneCodeEventHandler();</div>
+</div>
+<div>#endif</div>
+<div>  // 创建 isolate 实例</div>
+<div>  Isolate* isolate = Isolate::New(params);</div>
+<div>...</div>
+<div><br/></div>
+<div>// instance_data    node::NodeInstanceData *    0x7fff5fbff760    0x00007fff5fbff760</div>
+<div>// params    v8::Isolate::CreateParams  </div>
+<div>// array_buffer_allocator    node::ArrayBufferAllocator *    0x1051003c0    0x00000001051003c0</div>
+<div>// isolate    v8::Isolate *    0x104802000    0x0000000104802000</div>
+<div>// scoped_lock    node::MutexBase&lt;node::LibuvMutexTraits&gt;::ScopedLock     </div>
+<div><br/></div>
+<div>  {</div>
+<div>    // scoped_lock    node::MutexBase&lt;node::LibuvMutexTraits&gt;::ScopedLock  </div>
+<div>    // static Mutex node_isolate_mutex; // 摘录</div>
+<div>    // static v8::Isolate* node_isolate; // 摘录 文件级静态变量</div>
+<div>
+<div>    Mutex::ScopedLock scoped_lock(node_isolate_mutex);</div>
+</div>
+<div>    if (instance_data-&gt;is_main()) {</div>
+<div>      // 会走入此分支</div>
+<div>      CHECK_EQ(node_isolate, nullptr);</div>
+<div>      // 记录 isolate</div>
+<div>
+<div>      node_isolate = isolate;</div>
+<div>    }</div>
+</div>
+<div>  }</div>
+<div>...</div>
+<div><br/></div>
+<div>  {</div>
+<div>    // locker    v8::Locker  </div>
+<div>    // isolate_scope    v8::Isolate::Scope    </div>
+<div>    // handle_scope    v8::HandleScope    </div>
+<div>    // context    v8::Local&lt;v8::Context&gt;     </div>
+<div>
+<div>    Locker locker(isolate);</div>
+<div>    Isolate::Scope isolate_scope(isolate);</div>
+<div>    HandleScope handle_scope(isolate);</div>
+</div>
+<div>    Local&lt;Context&gt; context = Context::New(isolate);</div>
+<div>    // 通过构建上述几个关键参数，以下代码开始构建 Environment 对象</div>
+<div>    Environment* env = CreateEnvironment(isolate, context, instance_data);</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>CreateEnvironment 最终调入：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002c33e in node::CreateEnvironment(v8::Isolate*, uv_loop_s*, v8::Local&lt;v8::Context&gt;, int, char const* const*, int, char const* const*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4470</div>
+<div><br/></div>
+<div>
+<div>Environment* CreateEnvironment(Isolate* isolate,</div>
+<div>                               uv_loop_t* loop,</div>
+<div>                               Local&lt;Context&gt; context,</div>
+<div>                               int argc,</div>
+<div>                               const char* const* argv,</div>
+<div>                               int exec_argc,</div>
+</div>
+<div>                               const char* const* exec_argv) {</div>
+<div>  // handle_scope    v8::HandleScope  </div>
+<div>  // context_scope    v8::Context::Scope    </div>
+<div>  // env    node::Environment *    0x106000000    0x0000000106000000</div>
+<div>  //  </div>
+<div>
+<div>  HandleScope handle_scope(isolate);</div>
+<div><br/></div>
+</div>
+<div>  Context::Scope context_scope(context);</div>
+<div>  // 真正创建 Environment 对象</div>
+<div>  Environment* env = Environment::New(context, loop);</div>
+<div>  // 这句用来做什么？</div>
+<div>  isolate-&gt;SetAutorunMicrotasks(false);</div>
+<div>...</div>
+<div><br/></div>
+<div>  // 详见下述分析：</div>
+<div>  // 初始化 immediate 的 check handle</div>
+<div>
+<div>  uv_check_init(env-&gt;event_loop(), env-&gt;immediate_check_handle());</div>
+<div>  uv_unref(</div>
+<div>      reinterpret_cast&lt;uv_handle_t*&gt;(env-&gt;immediate_check_handle()));</div>
+</div>
+</div>
+<div><br/></div>
+<div>uv_check_init 在宏中被定义：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>
+<div>UV_LOOP_WATCHER_DEFINE(prepare, PREPARE)</div>
+<div>UV_LOOP_WATCHER_DEFINE(check, CHECK)</div>
+<div>UV_LOOP_WATCHER_DEFINE(idle, IDLE)</div>
+</div>
+</div>
+<div><br/></div>
+<div>---</div>
+<div><br/></div>
+<div>
+<div>#define UV_LOOP_WATCHER_DEFINE(name, type)                                    \</div>
+<div>  int uv_##name##_init(uv_loop_t* loop, uv_##name##_t* handle) {              \</div>
+<div>    uv__handle_init(loop, (uv_handle_t*)handle, UV_##type);                   \</div>
+<div>    handle-&gt;name##_cb = NULL;                                                 \</div>
+<div>    return 0;                                                                 \</div>
+</div>
+<div>  }</div>
+<div>...</div>
+<div><br/></div>
+<div>---</div>
+<div><br/></div>
+<div>进入：uv__handle_init 函数调用中：</div>
+<div><br/></div>
+<div>
+<div>#define uv__handle_init(loop_, h, type_)                                      \</div>
+</div>
+<div>  do {</div>
+<div>    // 设置当前handle的loop                                                                       \</div>
+<div>    (h)-&gt;loop = (loop_);</div>
+<div>    // 设置 TYPE                                                     \</div>
+<div>
+<div>    (h)-&gt;type = (type_);                                                      \</div>
+</div>
+<div>    (h)-&gt;flags = UV__HANDLE_REF;  /* Ref the loop when active. */</div>
+<div>    // 插入 loop 的 handle_queue 双向链表的队列尾           \</div>
+<div>
+<div>    QUEUE_INSERT_TAIL(&amp;(loop_)-&gt;handle_queue, &amp;(h)-&gt;handle_queue);            \</div>
+<div>    uv__handle_platform_init(h);                                              \</div>
+<div>  }                                                                           \</div>
+</div>
+<div>  while (0)</div>
+<div><br/></div>
+<div>---</div>
+<div><br/></div>
+<div># define uv__handle_platform_init(h) ((h)-&gt;next_closing = NULL)</div>
+<div><br/></div>
+<div>------</div>
+<div><br/></div>
+<div>再看下 uv_unref:</div>
+<div><br/></div>
+<div>
+<div>#define uv__handle_unref(h)                                                   \</div>
+<div>  do {                                                                        \</div>
+<div>    if (((h)-&gt;flags &amp; UV__HANDLE_REF) == 0) break;                            \</div>
+<div>    (h)-&gt;flags &amp;= ~UV__HANDLE_REF;                                            \</div>
+<div>    if (((h)-&gt;flags &amp; UV__HANDLE_CLOSING) != 0) break;                        \</div>
+<div>    if (((h)-&gt;flags &amp; UV__HANDLE_ACTIVE) != 0) uv__active_handle_rm(h);       \</div>
+<div>  }                                                                           \</div>
+</div>
+<div>  while (0)</div>
+<div><br/></div>
+<div>---</div>
+<div><br/></div>
+<div>
+<div>#define uv__active_handle_rm(h)                                               \</div>
+<div>  do {                                                                        \</div>
+<div>    (h)-&gt;loop-&gt;active_handles--;                                              \</div>
+<div>  }                                                                           \</div>
+<div>  while (0)</div>
+</div>
+</div>
+<div><br/></div>
+<div>紧接着，初始化了各种 handle:</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>uv_idle_init(env-&gt;event_loop(), env-&gt;immediate_idle_handle());</div>
+<div>uv_prepare_init(env-&gt;event_loop(), env-&gt;idle_prepare_handle());</div>
+<div>uv_check_init(env-&gt;event_loop(), env-&gt;idle_check_handle());</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>以下开始创建 process 对象：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>  // process_template    v8::Local&lt;v8::FunctionTemplate&gt;    </div>
+<div>  // process_object    v8::Local&lt;v8::Object&gt;    </div>
+<div>  // env    node::Environment *    0x106000000    0x0000000106000000 </div>
+<div>  // 构建 c/c++ 层次的“构造函数模板” </div>
+<div>  Local&lt;FunctionTemplate&gt; process_template = FunctionTemplate::New(isolate);</div>
+<div>  // 设置构造函数名称</div>
+<div>  process_template-&gt;SetClassName(FIXED_ONE_BYTE_STRING(isolate, "process"));</div>
+<div>  </div>
+<div>  // 开始开始创建 process 对象</div>
+<div>
+<div>  Local&lt;Object&gt; process_object =</div>
+</div>
+<div>      process_template-&gt;GetFunction()-&gt;NewInstance(context).ToLocalChecked();</div>
+<div>  env-&gt;set_process_object(process_object); // 宏展开见下：</div>
+<div>     </div>
+<div>---</div>
+<div><br/></div>
+<div>// 便于 env 对象的属性存取 env-&gt;process_object() 可以直接取值</div>
+<div>
+<div>#define V(PropertyName, TypeName)                                             \</div>
+<div>  inline v8::Local&lt;TypeName&gt; Environment::PropertyName() const {              \</div>
+<div>    return StrongPersistentToLocal(PropertyName ## _);                        \</div>
+<div>  }                                                                           \</div>
+<div>  inline void Environment::set_ ## PropertyName(v8::Local&lt;TypeName&gt; value) {  \</div>
+<div>    PropertyName ## _.Reset(isolate(), value);                                \</div>
+<div>  }</div>
+<div>  ENVIRONMENT_STRONG_PERSISTENT_PROPERTIES(V)</div>
+<div>#undef V</div>
+</div>
+</div>
+<div><br/></div>
+<div>最终会进入：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002c65a in node::CreateEnvironment(v8::Isolate*, uv_loop_s*, v8::Local&lt;v8::Context&gt;, int, char const* const*, int, char const* const*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4527</div>
+<div>—&gt;</div>
+<div>#0    0x00000001000239dd in node::SetupProcessObject(node::Environment*, int, char const* const*, int, char const* const*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:3047</div>
+<div>// 里面的真正设置 Process 对象的函数，函数体很长，不再粘贴，但是函数体比较容易看懂</div>
+<div>// 此函数中可以排查到 process 对象所有相关的函数和方法定义</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>再次回到：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002ce45 in node::StartNodeInstance(void*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4563</div>
+<div><br/></div>
+<div>...</div>
+<div>    // 设置错误处理函数</div>
+<div>
+<div>    isolate-&gt;SetAbortOnUncaughtExceptionCallback(</div>
+</div>
+<div>        ShouldAbortOnUncaughtException);</div>
+<div>...</div>
+<div>    // Start debug agent when argv has --debug</div>
+<div>...</div>
+<div>    </div>
+<div>    {</div>
+<div>      // callback_scope    node::Environment::AsyncCallbackScope    </div>
+<div>      Environment::AsyncCallbackScope callback_scope(env);</div>
+<div>      // 这里是重点，加载 JS 模块！！！</div>
+<div>
+<div>      LoadEnvironment(env);</div>
+<div>    }</div>
+</div>
+<div>    </div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002a26f in node::LoadEnvironment(node::Environment*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:3443</div>
+<div><br/></div>
+<div>
+<div>void LoadEnvironment(Environment* env) {</div>
+</div>
+<div>  HandleScope handle_scope(env-&gt;isolate());</div>
+<div>  // 设置回调</div>
+<div>
+<div>  env-&gt;isolate()-&gt;SetFatalErrorHandler(node::OnFatalError);</div>
+</div>
+<div>  env-&gt;isolate()-&gt;AddMessageListener(OnMessage);</div>
+<div>  // 在进程退出时，需要执行的回调（注册进程退出回调）</div>
+<div>  atexit(AtProcessExit);</div>
+<div>...</div>
+<div><br/></div>
+<div>  // try_catch    v8::TryCatch   </div>
+<div>
+<div>  TryCatch try_catch(env-&gt;isolate());</div>
+<div><br/></div>
+<div>  // Disable verbose mode to stop FatalException() handler from trying</div>
+<div>  // to handle the exception. Errors this early in the start-up phase</div>
+<div>  // are not safe to ignore.</div>
+<div>  try_catch.SetVerbose(false);</div>
+</div>
+<div><br/></div>
+<div>  // lib/internal 中的 js 文件最终在编译的时候，会被 node_js2c 工具转化成 ascii 码对应的代码串</div>
+<div>  // 并且被放在了 node_natives.h 的头文件中</div>
+<div>
+<div>  // Execute the lib/internal/bootstrap_node.js file which was included as a</div>
+<div>  // static C string in node_natives.h by node_js2c.</div>
+</div>
+<div>  // 'internal_bootstrap_node_native' is the string containing that source code.</div>
+<div>  // 获取 script 的名称</div>
+<div>
+<div>  Local&lt;String&gt; script_name = FIXED_ONE_BYTE_STRING(env-&gt;isolate(),</div>
+</div>
+<div>                                                    "bootstrap_node.js");</div>
+<div>  // 代码就在 internal_bootstrap_node_native 中</div>
+<div>  // 见下面的 ExecuteString 函数【此函数就是预编译+预执行阶段】</div>
+<div>
+<div>  Local&lt;Value&gt; f_value = ExecuteString(env, MainSource(env), script_name);</div>
+<div>  if (try_catch.HasCaught())  {</div>
+<div>    ReportException(env, try_catch);</div>
+<div>    exit(10);</div>
+<div>  }</div>
+</div>
+<div>  // The bootstrap_node.js file returns a function 'f'</div>
+<div>  // 检查 bootstrap_node.js 函数是不是返回一个 Function </div>
+<div>  CHECK(f_value-&gt;IsFunction());</div>
+<div>  // 类型转化</div>
+<div>
+<div>  Local&lt;Function&gt; f = Local&lt;Function&gt;::Cast(f_value);</div>
+</div>
+<div><br/></div>
+<div>  // Add a reference to the global object （获取 global 全局对象）</div>
+<div>  Local&lt;Object&gt; global = env-&gt;context()-&gt;Global();</div>
+<div><br/></div>
+<div>// 下面的函数，设置了和 GC 相关的回调函数用来用作调试</div>
+<div>
+<div>#if defined HAVE_DTRACE || defined HAVE_ETW</div>
+<div>  InitDTrace(env, global);</div>
+</div>
+<div>#endif</div>
+<div><br/></div>
+<div>...</div>
+<div><br/></div>
+<div>  // 来看最后的几段逻辑</div>
+<div>
+<div>  // Enable handling of uncaught exceptions</div>
+<div>  // (FatalException(), break on uncaught exception in debugger)</div>
+<div>  //</div>
+<div>  // This is not strictly necessary since it's almost impossible</div>
+<div>  // to attach the debugger fast enought to break on exception</div>
+<div>  // thrown during process startup.</div>
+<div>  try_catch.SetVerbose(true);</div>
+<div><br/></div>
+<div>  env-&gt;SetMethod(env-&gt;process_object(), "_rawDebug", RawDebug);</div>
+<div><br/></div>
+<div>  // Expose the global object as a property on itself</div>
+</div>
+<div>  // (Allows you to set stuff on `global` from anywhere in JavaScript.)</div>
+<div>  // 设置 node 中的全局变量 “global” 指向全局对象</div>
+<div>
+<div>  global-&gt;Set(FIXED_ONE_BYTE_STRING(env-&gt;isolate(), "global"), global);</div>
+<div><br/></div>
+<div>  // Now we call 'f' with the 'process' variable that we've built up with</div>
+<div>  // all our bindings. Inside bootstrap_node.js and internal/process we'll</div>
+</div>
+<div>  // take care of assigning things to their places.</div>
+<div>  // 最终开始调用 bootstrap_node.js 中的 js 逻辑</div>
+<div>
+<div>  // We start the process this way in order to be more modular. Developers</div>
+<div>  // who do not like how bootstrap_node.js sets up the module system but do</div>
+<div>  // like Node's I/O bindings may want to replace 'f' with their own function.</div>
+</div>
+<div>  Local&lt;Value&gt; arg = env-&gt;process_object(); // 使用 process 对象用作参数</div>
+<div>  // 调用 js 函数( bootstrap_node.js 中的逻辑 )</div>
+<div>  f-&gt;Call(Null(env-&gt;isolate()), 1, &amp;arg);</div>
+<div>  // 自此，loadEnvironment 执行完毕</div>
+<div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010002a623 in node::ExecuteString(node::Environment*, v8::Local&lt;v8::String&gt;, v8::Local&lt;v8::String&gt;) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:1731</div>
+<div><br/></div>
+<div>
+<div>// Executes a str within the current v8 context.</div>
+<div>static Local&lt;Value&gt; ExecuteString(Environment* env,</div>
+<div>                                  Local&lt;String&gt; source,</div>
+<div>                                  Local&lt;String&gt; filename) {</div>
+<div>  EscapableHandleScope scope(env-&gt;isolate());</div>
+<div>  TryCatch try_catch(env-&gt;isolate());</div>
+<div><br/></div>
+<div>  // try_catch must be nonverbose to disable FatalException() handler,</div>
+<div>  // we will handle exceptions ourself.</div>
+</div>
+<div>  try_catch.SetVerbose(false);</div>
+<div>  // 文件名称</div>
+<div>  ScriptOrigin origin(filename);</div>
+<div>  // 开始“预编译”代码块，返回Script对象</div>
+<div>  // script    v8::MaybeLocal&lt;v8::Script&gt;   </div>
+<div>
+<div>  MaybeLocal&lt;v8::Script&gt; script =</div>
+<div>      v8::Script::Compile(env-&gt;context(), source, &amp;origin);</div>
+<div>  if (script.IsEmpty()) {</div>
+<div>    ReportException(env, try_catch);</div>
+<div>    exit(3);</div>
+</div>
+<div>  }</div>
+<div>  // “预编译”完成后，开始“预执行”代码块</div>
+<div>  // result    v8::Local&lt;v8::Value&gt;   </div>
+<div>
+<div>  Local&lt;Value&gt; result = script.ToLocalChecked()-&gt;Run();</div>
+<div>  if (result.IsEmpty()) {</div>
+<div>    ReportException(env, try_catch);</div>
+<div>    exit(4);</div>
+</div>
+<div>  }</div>
+<div>  // 将 result 转移至前一个 scope；同时返回 result</div>
+<div>
+<div>  return scope.Escape(result);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B4.resources/9BC3E33C-CB48-44F7-939F-EA88DCB16817.png" height="694" width="1282"/></div>
+</body></html>

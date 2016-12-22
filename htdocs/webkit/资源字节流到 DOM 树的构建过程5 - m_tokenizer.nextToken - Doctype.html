@@ -1,0 +1,679 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-25 10:36:40 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-26 13:24:56 +0000"/><title>资源字节流到 DOM 树的构建过程5 - m_tokenizer.nextToken - Doctype</title></head><body>
+<div>
+<div>
+<div>Doctype 的解析，即为解析文档流的开始，文档流原样为：sample.html</div>
+<div>在 auto token = m_tokenizer.nextToken(m_input.current()) 刚开始执行时，使用 lldb 调试得知：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>(lldb) print m_input.current().toString().show()</div>
+</div>
+<div>&lt;!DOCTYPE html&gt;\u000A&lt;html lang="en"&gt;\u000A&lt;head&gt;\u000A    &lt;meta charset="UTF-8"&gt;\u000A    &lt;title&gt;Document&lt;/title&gt;\u000A    &lt;style&gt;\u000A        .special {\u000A            width: 100px;\u000A            height: 100px;\u000A            background-color: green;\u000A        }\u000A        .container {\u000A            font-size: 20px;\u000A        }\u000A    &lt;/style&gt;\u000A&lt;/head&gt;\u000A&lt;body&gt;\u000A    &lt;div class="special"&gt;&lt;/div&gt;\u000A    &lt;div class="container"&gt;\u000A        &lt;p&gt;\u6211\u662F\u4E00\u4E2A\u6D4B\u8BD5\u7684\u6BB5\u843D&lt;/p&gt;\u000A    &lt;/div&gt;\u000A    &lt;script&gt;\u000A        var special = document.querySelector( '.special' );\u000A        special.innerHTML = '123';\u000A        special.style.color = 'white';\u000A    &lt;/script&gt;\u000A&lt;/body&gt;\u000A&lt;/html&gt;\u000A</div>
+<div><br/></div>
+<div>// 可以看到，m_input.current() 即为全部的字节流</div>
+</div>
+<div><br/></div>
+<div>待真正进入：WebCore::HTMLTokenizer::processToken 时：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    WebCore::HTMLTokenizer *    0x1165d01c8    0x00000001165d01c8</div>
+<div>     m_state    WebCore::HTMLTokenizer::State    DataState // 此时的状态</div>
+<div>     m_token    WebCore::HTMLToken  </div>
+<div>          m_type    WebCore::HTMLToken::Type    Uninitialized // 当前token的状态 </div>
+</div>
+<div><br/></div>
+<div>之后会调入peek函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010767d00b in WebCore::InputStreamPreprocessor&lt;WebCore::HTMLTokenizer&gt;::peek(WebCore::SegmentedString&amp;, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/InputStreamPreprocessor.h:57</div>
+<div>    // 此函数会在之后多次调用</div>
+<div>
+<div>    // Returns whether we succeeded in peeking at the next character.</div>
+<div>    // The only way we can fail to peek is if there are no more</div>
+<div>    // characters in |source| (after collapsing \r\n, etc).</div>
+<div>    ALWAYS_INLINE bool peek(SegmentedString&amp; source, bool skipNullCharacters = false)</div>
+</div>
+<div>    {</div>
+<div>        // this    WebCore::InputStreamPreprocessor&lt;WebCore::HTMLTokenizer&gt; *    0x1165d0aa8    0x00000001165d0aa8</div>
+<div>        // source    WebCore::SegmentedString &amp;    0x00000001165d0140 【仍旧是上面的一大坨字符流】</div>
+<div>        // skipNullCharacters    bool    true【state == DataState || state == RCDATAState || state == RAWTEXTState;】</div>
+<div>
+<div>        if (source.isEmpty())</div>
+</div>
+<div>            return false;</div>
+<div>        // 默认情况下 source 的currentChar即为第一个字符</div>
+<div>        // m_nextInputCharacter    UChar    60 【ASCII字符编码，即为：“&lt;” 字符的号码60】</div>
+<div>        // 此步是此函数重点要做的，定位当前要处理的Char</div>
+<div>
+<div>        m_nextInputCharacter = source.currentChar();</div>
+<div><br/></div>
+<div>        // Every branch in this function is expensive, so we have a</div>
+<div>        // fast-reject branch for characters that don't require special</div>
+<div>        // handling. Please run the parser benchmark whenever you touch</div>
+<div>        // this function. It's very hot.</div>
+<div>        static const UChar specialCharacterMask = '\n' | '\r' | '\0';</div>
+</div>
+<div>        if (m_nextInputCharacter &amp; ~specialCharacterMask) {</div>
+<div>            // 如果输入字符不为上述三个中的一个，则会走此分支</div>
+<div>            // 也就是说这个判断其实挺频繁的</div>
+<div>            // 我们既然分析的是刚开始的Doctype解析，所以会走这个分支</div>
+<div>
+<div>            m_skipNextNewLine = false;</div>
+<div>            return true;</div>
+<div>        }</div>
+<div>        return processNextInputCharacter(source, skipNullCharacters);</div>
+<div>    }</div>
+</div>
+</div>
+</div>
+<div><br/></div>
+<div>之后：UChar character = m_preprocessor.nextInputCharacter() 函数再把 m_nextInputCharacter 读到，到这里，当前要处理的 Char 已经确定，开始进入 switch 大分之，此节以 doctype 标签的解析为例：</div>
+<div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    WebCore::HTMLTokenizer *    0x1165d01c8    0x00000001165d01c8</div>
+<div>     m_state    WebCore::HTMLTokenizer::State    DataState</div>
+<div><br/></div>
+<div>===</div>
+<div>★ 关于 ADVANCE_TO 宏：</div>
+<div>ADVANCE_TO(MarkupDeclarationOpenState)</div>
+<div>最终会通过调用：</div>
+<div>#2    0x000000010767d11b in WebCore::InputStreamPreprocessor&lt;WebCore::HTMLTokenizer&gt;::advance(WebCore::SegmentedString&amp;, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/InputStreamPreprocessor.h:77</div>
+<div>#1    0x000000010767cf09 in WebCore::SegmentedString::advanceAndUpdateLineNumber() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/text/SegmentedString.h:244</div>
+<div>#0    0x00000001089412aa in WebCore::SegmentedString::advanceAndUpdateLineNumber16() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/text/SegmentedString.cpp:278</div>
+<div>即函数体为：</div>
+<div>
+<div>void SegmentedString::advanceAndUpdateLineNumber16()</div>
+<div>{</div>
+<div>    ASSERT(!m_pushedChar1);</div>
+<div>    ASSERT(m_currentString.getCurrentChar() == m_currentChar);</div>
+<div>    if (m_currentChar == '\n') {</div>
+<div>        ++m_currentLine;</div>
+<div>        m_numberOfCharactersConsumedPriorToCurrentLine = numberOfCharactersConsumed() + 1;</div>
+<div>    }</div>
+<div>    decrementAndCheckLength();</div>
+<div>    m_currentChar = m_currentString.incrementAndGetCurrentChar16();</div>
+</div>
+<div>}</div>
+<div>来更新和获取下一位的Char，即指针向右偏移一位并且通过*来解引用获取下一位字符，以Doctype为例，由“!”变为“D”</div>
+<div>再通过 peek 函数更新 m_nextInputCharacter 的值</div>
+<div>===</div>
+<div><br/></div>
+<div>- BEGIN_STATE(DataState) &lt;</div>
+<div>- ADVANCE_TO(TagOpenState)</div>
+<div>- BEGIN_STATE(TagOpenState) !</div>
+<div>- ADVANCE_TO(MarkupDeclarationOpenState)</div>
+<div>- BEGIN_STATE(MarkupDeclarationOpenState) D character    UChar    68</div>
+<div>- SWITCH_TO(DOCTYPEState)</div>
+<div>- BEGIN_STATE(DOCTYPEState) character    UChar    32</div>
+<div>- ADVANCE_TO(BeforeDOCTYPENameState) character    UChar    32</div>
+<div>- BEGIN_STATE(BeforeDOCTYPENameState) h character    UChar    104</div>
+<div>-- m_token.beginDOCTYPE(toASCIILower(character));</div>
+<div>      // 中间会穿插 beginDOCTYPE 函数来创建 doctype 这个 token  </div>
+<div style="margin-left:40px;">inline void HTMLToken::beginDOCTYPE()</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    ASSERT(m_type == Uninitialized);</div>
+<div style="margin-left:40px;">    // 设置自身状态</div>
+<div style="margin-left:40px;">    m_type = DOCTYPE;</div>
+<div style="margin-left:40px;">    m_doctypeData = std::make_unique&lt;DoctypeData&gt;();</div>
+<div style="margin-left:40px;">}</div>
+<div style="margin-left:40px;"><br/></div>
+<div style="margin-left:40px;">inline void HTMLToken::beginDOCTYPE(UChar character)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLToken *    0x1165d01d0    0x00000001165d01d0</div>
+<div style="margin-left:40px;">    ASSERT(character);</div>
+<div style="margin-left:40px;">    beginDOCTYPE();</div>
+<div style="margin-left:40px;">    m_data.append(character);</div>
+<div style="margin-left:40px;">    m_data8BitCheck |= character;</div>
+<div style="margin-left:40px;">}</div>
+<div>   </div>
+<div>- ADVANCE_TO(DOCTYPENameState) h character    UChar    104</div>
+<div>- BEGIN_STATE(DOCTYPENameState) t character    UChar    116</div>
+<div>-- m_token.appendToName(toASCIILower(character))</div>
+<div style="margin-left:40px;">inline void HTMLToken::appendToName(UChar character)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    ASSERT(m_type == StartTag || m_type == EndTag || m_type == DOCTYPE);</div>
+<div style="margin-left:40px;">    ASSERT(character);</div>
+<div style="margin-left:40px;">    // 主要是 append data</div>
+<div style="margin-left:40px;">    m_data.append(character);</div>
+<div style="margin-left:40px;">    m_data8BitCheck |= character;</div>
+<div style="margin-left:40px;">}</div>
+<div>- ADVANCE_TO(DOCTYPENameState)</div>
+<div>- BEGIN_STATE(DOCTYPENameState) m character    UChar    109</div>
+<div>- ADVANCE_TO(DOCTYPENameState)</div>
+<div>- BEGIN_STATE(DOCTYPENameState) l character    UChar    108</div>
+<div>- ADVANCE_TO(DOCTYPENameState)</div>
+<div>- BEGIN_STATE(DOCTYPENameState) &gt; character    UChar    62 【结束】</div>
+<div>—- return emitAndResumeInDataState(source)</div>
+<div style="margin-left:40px;">inline bool HTMLTokenizer::emitAndResumeInDataState(SegmentedString&amp; source)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLTokenizer *    0x1165d01c8    0x00000001165d01c8</div>
+<div style="margin-left:40px;">    saveEndTagNameIfNeeded();</div>
+<div style="margin-left:40px;">    // 恢复状态为 DataState</div>
+<div style="margin-left:40px;">    m_state = DataState;</div>
+<div style="margin-left:40px;">    // 更新至下一个字符</div>
+<div style="margin-left:40px;">    source.advanceAndUpdateLineNumber();</div>
+<div style="margin-left:40px;">    return true;</div>
+<div style="margin-left:40px;">}</div>
+<div>- WebCore::HTMLTokenizer::processToken 函数跳出</div>
+<div>- 通过 return TokenPtr(processToken(source) ? &amp;m_token : nullptr) 语句，最终返回处理过后的 Token</div>
+</div>
+<div><br/></div>
+<div>之后：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010756f5f8 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:252</div>
+<div><br/></div>
+<div>恢复执行：</div>
+<div>auto token = m_tokenizer.nextToken(m_input.current());</div>
+<div>===</div>
+<div>这里需要调用一个：</div>
+<div>m_sourceTracker.endToken(m_input.current(), m_tokenizer); 来更新 sourceTracker 的自身状态：</div>
+<div style="margin-left:40px;">void HTMLSourceTracker::endToken(SegmentedString&amp; currentInput, HTMLTokenizer&amp; tokenizer)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLSourceTracker *    0x1165d0b98    0x00000001165d0b98</div>
+<div style="margin-left:40px;">    //      m_started    bool    false</div>
+<div style="margin-left:40px;">    //      m_tokenStart    unsigned int    0</div>
+<div style="margin-left:40px;">    //      m_tokenEnd    unsigned int    15【注意】</div>
+<div style="margin-left:40px;">    ASSERT(m_started);</div>
+<div style="margin-left:40px;">    m_started = false;</div>
+<div style="margin-left:40px;"><br/></div>
+<div style="margin-left:40px;">    m_tokenEnd = currentInput.numberOfCharactersConsumed() - tokenizer.numberOfBufferedCharacters();</div>
+<div style="margin-left:40px;">    m_cachedSourceForToken = String();</div>
+<div style="margin-left:40px;">}</div>
+<div>这里需要注意：</div>
+<div>(lldb) print m_input.current().toString().show()</div>
+<div>\u000A&lt;html lang="en"&gt;\u000A&lt;head&gt;\u000A    &lt;meta charset="UTF-8"&gt;\u000A    &lt;title&gt;Document&lt;/title&gt;\u000A    &lt;style&gt;\u000A        .special {\u000A            width: 100px;\u000A            height: 100px;\u000A            background-color: green;\u000A        }\u000A        .container {\u000A            font-size: 20px;\u000A        }\u000A    &lt;/style&gt;\u000A&lt;/head&gt;\u000A&lt;body&gt;\u000A    &lt;div class="special"&gt;&lt;/div&gt;\u000A    &lt;div class="container"&gt;\u000A        &lt;p&gt;\u6211\u662F\u4E00\u4E2A\u6D4B\u8BD5\u7684\u6BB5\u843D&lt;/p&gt;\u000A    &lt;/div&gt;\u000A    &lt;script&gt;\u000A        var special = document.querySelector( '.special' );\u000A        special.innerHTML = '123';\u000A        special.style.color = 'white';\u000A    &lt;/script&gt;\u000A&lt;/body&gt;\u000A&lt;/html&gt;\u000A</div>
+<div>可以注意到，m_input 中已经被处理过的：“&lt;!DOCTYPE html&gt;”已经不见了</div>
+<div>而 m_tokenEnd 指向 &lt;!DOCTYPE html&gt; 之后的换行符</div>
+<div>===</div>
+<div>同时，这里会有 XSS 相关的检测，不作为重点：</div>
+<div>m_xssAuditor.filterToken 函数调用</div>
+<div>===</div>
+<div>★ 最后调用：</div>
+<div>#0    0x000000010756f8f7 in WebCore::HTMLDocumentParser::constructTreeFromHTMLToken(WebCore::HTMLTokenizer::TokenPtr&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:306</div>
+<div>#0    0x000000010756f937 in WebCore::HTMLDocumentParser::constructTreeFromHTMLToken(WebCore::HTMLTokenizer::TokenPtr&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:324</div>
+<div>进入：m_treeBuilder-&gt;constructTree(token)</div>
+<div>===</div>
+<div>★ 进入：WebCore::HTMLTreeBuilder::constructTree：</div>
+<div>#0    0x00000001076851b8 in WebCore::HTMLTreeBuilder::constructTree(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:341</div>
+<div>===</div>
+<div>★ 进入：WebCore::HTMLTreeBuilder::processToken：</div>
+<div>#0    0x0000000107685f14 in WebCore::HTMLTreeBuilder::processToken(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:369</div>
+<div>     // 看看函数体</div>
+<div style="margin-left:40px;">void HTMLTreeBuilder::processToken(AtomicHTMLToken&amp; token)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLTreeBuilder *    0x1155a5a68    0x00000001155a5a68</div>
+<div style="margin-left:40px;">    // token    WebCore::AtomicHTMLToken &amp;    0x00007fff5fbfcc30</div>
+<div style="margin-left:40px;">    //      m_type    WebCore::HTMLToken::Type    DOCTYPE</div>
+<div style="margin-left:40px;">    switch (token.type()) {</div>
+<div style="margin-left:40px;">    case HTMLToken::Uninitialized:</div>
+<div style="margin-left:40px;">        ASSERT_NOT_REACHED();</div>
+<div style="margin-left:40px;">        break;</div>
+<div style="margin-left:40px;">    case HTMLToken::DOCTYPE:</div>
+<div style="margin-left:40px;">        // 所以走入此分支</div>
+<div style="margin-left:40px;">        m_shouldSkipLeadingNewline = false;</div>
+<div style="margin-left:40px;">        processDoctypeToken(token);</div>
+<div style="margin-left:40px;">        break;</div>
+<div style="margin-left:40px;">...</div>
+<div>===</div>
+<div>★ 进入：WebCore::HTMLTreeBuilder::processDoctypeToken：</div>
+<div>#0    0x0000000107686118 in WebCore::HTMLTreeBuilder::processDoctypeToken(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:401</div>
+<div>     // 函数体</div>
+<div style="margin-left:40px;">void HTMLTreeBuilder::processDoctypeToken(AtomicHTMLToken&amp; token)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLTreeBuilder *    0x1155a5a68    0x00000001155a5a68</div>
+<div style="margin-left:40px;">    //      m_tree    WebCore::HTMLConstructionSite   </div>
+<div style="margin-left:40px;">    //      m_insertionMode    WebCore::HTMLTreeBuilder::InsertionMode    Initial</div>
+<div style="margin-left:40px;">    ASSERT(token.type() == HTMLToken::DOCTYPE);</div>
+<div style="margin-left:40px;">    if (m_insertionMode == InsertionMode::Initial) {</div>
+<div style="margin-left:40px;">        // 走入此分支【新建节点插入任务并且插入任务列表；设置兼容模式】</div>
+<div style="margin-left:40px;">        m_tree.insertDoctype(token);</div>
+<div style="margin-left:40px;">        // 标记 insertionMode</div>
+<div style="margin-left:40px;">        m_insertionMode = InsertionMode::BeforeHTML;</div>
+<div style="margin-left:40px;">        return;</div>
+<div style="margin-left:40px;">    }</div>
+<div style="margin-left:40px;">...</div>
+<div>===</div>
+<div>★ 进入：WebCore::HTMLConstructionSite::insertDoctype：</div>
+<div>#0    0x0000000107541c38 in WebCore::HTMLConstructionSite::insertDoctype(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:408</div>
+<div>     // 看下函数体：</div>
+<div style="margin-left:40px;">void HTMLConstructionSite::insertDoctype(AtomicHTMLToken&amp; token)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    // publicId    WTF::String   m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div>
+<div style="margin-left:40px;">    String publicId = token.publicIdentifier();</div>
+<div style="margin-left:40px;">    // systemId    WTF::String   m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div>
+<div style="margin-left:40px;">    String systemId = token.systemIdentifier();</div>
+<div style="margin-left:40px;">    // 上述两个Id的值在doctype的解析中为空字符串</div>
+<div style="margin-left:40px;">    // 此函数中最重要的函数调用</div>
+<div style="margin-left:40px;">    // m_attachmentRoot    WebCore::HTMLDocument &amp;    0x000000011659f000</div>
+<div style="margin-left:40px;">    // m_document    WebCore::HTMLDocument &amp;    0x000000011659f000</div>
+<div style="margin-left:40px;">    // m_attachmentRoot 是文档的根元素</div>
+<div style="margin-left:40px;">    attachLater(m_attachmentRoot, DocumentType::create(m_document, token.name(), publicId, systemId));</div>
+<div style="margin-left:40px;">    // 上述函数的具体分析见下，主要是将新建的节点插入任务append入队列中</div>
+<div style="margin-left:40px;">    // DOCTYPE nodes are only processed when parsing fragments w/o contextElements, which</div>
+<div style="margin-left:40px;">    // never occurs.  However, if we ever chose to support such, this code is subtly wrong,</div>
+<div style="margin-left:40px;">    // because context-less fragments can determine their own quirks mode, and thus change</div>
+<div style="margin-left:40px;">    // parsing rules (like &lt;p&gt; inside &lt;table&gt;).  For now we ASSERT that we never hit this code</div>
+<div style="margin-left:40px;">    // in a fragment, as changing the owning document's compatibility mode would be wrong.</div>
+<div style="margin-left:40px;">    ASSERT(!m_isParsingFragment);</div>
+<div style="margin-left:40px;">    if (m_isParsingFragment)</div>
+<div style="margin-left:40px;">        return;</div>
+<div style="margin-left:40px;">    // 关于怪癖（怪异）模式的设置</div>
+<div style="margin-left:40px;">    if (token.forceQuirks())</div>
+<div style="margin-left:40px;">        setCompatibilityMode(DocumentCompatibilityMode::QuirksMode);</div>
+<div style="margin-left:40px;">    else</div>
+<div style="margin-left:40px;">        // 会进入此分支【设置怪异模式的代码逻辑都在此函数中，详细函数，参见此节后面的附录】</div>
+<div style="margin-left:40px;">        // 执行到最后，设置好 document 对象的 m_compatibilityMode 属性</div>
+<div style="margin-left:40px;">        setCompatibilityModeFromDoctype(token.name(), publicId, systemId);</div>
+<div style="margin-left:40px;">}</div>
+<div>===</div>
+<div>★ 进入：WebCore::HTMLConstructionSite::attachLater：</div>
+<div>#0    0x0000000107540726 in WebCore::HTMLConstructionSite::attachLater(WebCore::ContainerNode&amp;, WTF::Ref&lt;WebCore::Node&gt;&amp;&amp;, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:175</div>
+<div>     // 看下函数体：</div>
+<div style="margin-left:40px;">void HTMLConstructionSite::attachLater(ContainerNode&amp; parent, Ref&lt;Node&gt;&amp;&amp; child, bool selfClosing)</div>
+<div style="margin-left:40px;">{</div>
+<div style="margin-left:40px;">    ...</div>
+<div style="margin-left:40px;">    // this    WebCore::HTMLConstructionSite *    0x1155a5a88    0x00000001155a5a88</div>
+<div style="margin-left:40px;">    //     m_taskQueue    WebCore::HTMLConstructionSite::TaskQueue  </div>
+<div style="margin-left:40px;">    //     m_openElements    WebCore::HTMLElementStack     </div>
+<div style="margin-left:40px;">    // parent    WebCore::HTMLDocument &amp;    0x000000011659f000</div>
+<div style="margin-left:40px;">    // child    WTF::Ref&lt;WebCore::Node&gt; &amp;&amp;    0x00007fff5fbfcb28【即为上一步新建出来的右值节点对象引用】</div>
+<div style="margin-left:40px;">    // selfClosing    bool    false</div>
+<div style="margin-left:40px;">    // task    WebCore::HTMLConstructionSiteTask   </div>
+<div style="margin-left:40px;">    if (shouldFosterParent()) {</div>
+<div style="margin-left:40px;">        fosterParent(WTFMove(child));</div>
+<div style="margin-left:40px;">        return;</div>
+<div style="margin-left:40px;">    }</div>
+<div style="margin-left:40px;">    // 创建DOM树构建任务，模式是Insert</div>
+<div style="margin-left:40px;">    HTMLConstructionSiteTask task(HTMLConstructionSiteTask::Insert);</div>
+<div style="margin-left:40px;">    // 设置父节点（Doctype环节即为文档的根节点）</div>
+<div style="margin-left:40px;">    // parent    WTF::RefPtr&lt;WebCore::ContainerNode&gt;  </div>
+<div style="margin-left:40px;">    //     m_ptr    WebCore::HTMLDocument *    0x11659f000    0x000000011659f000 </div>
+<div style="margin-left:40px;">    task.parent = &amp;parent;</div>
+<div style="margin-left:40px;">    // child    WTF::RefPtr&lt;WebCore::Node&gt;  </div>
+<div style="margin-left:40px;">    //     m_ptr    WebCore::DocumentType *    0x120bbd068    0x0000000120bbd068 </div>
+<div style="margin-left:40px;">    //          WebCore::Node    WebCore::Node</div>
+<div style="margin-left:40px;">    //          m_name    WTF::String    m_data8    const LChar *    "html"    0x0000000109c9aba4</div>
+<div style="margin-left:40px;">    //          m_publicId    WTF::String    m_ptr    WTF::StringImpl *    NULL    0x0000000000000000</div>
+<div style="margin-left:40px;">    //          m_systemId    WTF::String    m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div>
+<div style="margin-left:40px;">    task.child = WTFMove(child); // WTFMove 之后，child 的值就为空了</div>
+<div style="margin-left:40px;">    task.selfClosing = selfClosing;</div>
+<div style="margin-left:40px;">    // 如果达到了最大的树的深度，则以兄弟节点的形式来添加目标节点。。。</div>
+<div style="margin-left:40px;">    // (lldb) print m_openElements.stackDepth()  =&gt;  (unsigned int) $242 = 0【刚开始肯定是深度为0】</div>
+<div style="margin-left:40px;">    // (lldb) print m_maximumDOMTreeDepth  =&gt;  (unsigned int) $243 = 512【最大深度512】</div>
+<div style="margin-left:40px;">    // Add as a sibling of the parent if we have reached the maximum depth allowed.</div>
+<div style="margin-left:40px;">    if (m_openElements.stackDepth() &gt; m_maximumDOMTreeDepth &amp;&amp; task.parent-&gt;parentNode())</div>
+<div style="margin-left:40px;">        task.parent = task.parent-&gt;parentNode();</div>
+<div style="margin-left:40px;"><br/></div>
+<div style="margin-left:40px;">    ASSERT(task.parent);</div>
+<div style="margin-left:40px;">    // 将新建任务插入任务队列【单向链表】</div>
+<div style="margin-left:40px;">    m_taskQueue.append(WTFMove(task));</div>
+<div style="margin-left:40px;">    // 之后可见：</div>
+<div style="margin-left:40px;">    // m_taskQueue    WebCore::HTMLConstructionSite::TaskQueue  </div>
+<div style="margin-left:40px;">    //     WTF::VectorBuffer&lt;WebCore::HTMLConstructionSiteTask, 1&gt;    WTF::VectorBuffer&lt;WebCore::HTMLConstructionSiteTask, 1&gt;    </div>
+<div style="margin-left:40px;">    //          WTF::VectorBufferBase&lt;WebCore::HTMLConstructionSiteTask&gt;    WTF::VectorBufferBase&lt;WebCore::HTMLConstructionSiteTask&gt;    </div>
+<div style="margin-left:40px;">    //               m_buffer    WebCore::HTMLConstructionSiteTask *    0x1155a5af0    0x00000001155a5af0</div>
+<div style="margin-left:40px;">    //                    这个 m_buffer 即为这个链表的头节点，其 nextChild 则指向下一个任务节点，目前其指向NULL，因为只有一个任务</div>
+<div style="margin-left:40px;">    //               m_capacity    unsigned int    1</div>
+<div style="margin-left:40px;">    //               m_size    unsigned int    1 </div>
+<div style="margin-left:40px;">}</div>
+<div>---</div>
+<div>由此可以，attachLater的任务仅仅是把新建的插入任务节点，append至任务队列（单向链表）</div>
+<div>===</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div><br/></div>
+<div>最终 processToken 函数运行完毕：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x0000000107685274 in WebCore::HTMLTreeBuilder::constructTree(WebCore::AtomicHTMLToken&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLTreeBuilder.cpp:351</div>
+<div><br/></div>
+<div>
+<div>void HTMLTreeBuilder::constructTree(AtomicHTMLToken&amp; token)</div>
+<div>{</div>
+<div>#if !ASSERT_DISABLED</div>
+<div>    ASSERT(!m_destroyed);</div>
+<div>    ASSERT(!m_destructionProhibited);</div>
+<div>    m_destructionProhibited = true;</div>
+<div>#endif</div>
+<div><br/></div>
+<div>    if (shouldProcessTokenInForeignContent(token))</div>
+<div>        processTokenInForeignContent(token);</div>
+</div>
+<div>    else</div>
+<div>        // 横线上面的一大段都是在分析此函数的执行：分析具体的token-&gt;找到对应的token处理函数-&gt;创建节点插入任务-&gt;将新建任务插入列表【这是此函数的通用处理流程】</div>
+<div>        processToken(token);</div>
+<div>    // 继续向下执行</div>
+<div>    ...</div>
+<div>    // 当然最最重要的一个函数即是：</div>
+<div>    // m_tree    WebCore::HTMLConstructionSite   </div>
+<div>    m_tree.executeQueuedTasks(); // 开始执行任务</div>
+<div>}</div>
+<div>===</div>
+<div>★ 进入 WebCore::HTMLConstructionSite::executeQueuedTasks：</div>
+<div>#0    0x0000000107540b30 in WebCore::HTMLConstructionSite::executeQueuedTasks() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:198</div>
+<div>
+<div>void HTMLConstructionSite::executeQueuedTasks()</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::HTMLConstructionSite *    0x1155a5a88    0x00000001155a5a88</div>
+<div>    //      m_taskQueue    WebCore::HTMLConstructionSite::TaskQueue   </div>
+<div>
+<div>    if (m_taskQueue.isEmpty())</div>
+<div>        return;</div>
+<div><br/></div>
+<div>    // Copy the task queue into a local variable in case executeTask</div>
+<div>    // re-enters the parser.</div>
+</div>
+<div>    TaskQueue queue = WTFMove(m_taskQueue);</div>
+<div>    // 进入循环语句</div>
+<div>
+<div>    for (auto&amp; task : queue)</div>
+<div>        executeTask(task);</div>
+<div><br/></div>
+<div>    // We might be detached now.</div>
+<div>}</div>
+</div>
+<div>===</div>
+<div>★ 进入 WebCore::executeTask(WebCore::HTMLConstructionSiteTask&amp;)：</div>
+<div>#0    0x0000000107540bec in WebCore::executeTask(WebCore::HTMLConstructionSiteTask&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:155</div>
+<div>
+<div>static inline void executeTask(HTMLConstructionSiteTask&amp; task)</div>
+</div>
+<div>{</div>
+<div>    // task    WebCore::HTMLConstructionSiteTask &amp;    0x00007fff5fbfcb90</div>
+<div>    // operation    WebCore::HTMLConstructionSiteTask::Operation    Insert</div>
+<div>    // </div>
+<div>
+<div>    switch (task.operation) {</div>
+<div>    case HTMLConstructionSiteTask::Insert:</div>
+<div>        executeInsertTask(task);</div>
+</div>
+<div>        return;</div>
+<div>...</div>
+<div>===</div>
+<div>★ 进入 WebCore::executeInsertTask(WebCore::HTMLConstructionSiteTask&amp;)：</div>
+<div>#0    0x00000001075442cc in WebCore::executeInsertTask(WebCore::HTMLConstructionSiteTask&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:117</div>
+<div>进入此函数中最主要的两个函数调用是：</div>
+<div>    ...</div>
+<div>    insert(task);</div>
+<div>    task.child-&gt;beginParsingChildren();</div>
+<div>    ...</div>
+<div>===</div>
+<div>★ 进入 insert ：</div>
+<div>#0    0x000000010754457a in WebCore::insert(WebCore::HTMLConstructionSiteTask&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:106</div>
+<div>
+<div>static inline void insert(HTMLConstructionSiteTask&amp; task)</div>
+</div>
+<div>{</div>
+<div>    ...</div>
+<div>    // 如果当前 task 的 child 已经有了父元素【此篇分析应该是没有的，此分支跳过了】</div>
+<div>
+<div>    if (ContainerNode* parent = task.child-&gt;parentNode())</div>
+</div>
+<div>        parent-&gt;parserRemoveChild(*task.child);</div>
+<div>    // 如果当前 task 有下一个 task 任务</div>
+<div>
+<div>    if (task.nextChild)</div>
+<div>        task.parent-&gt;parserInsertBefore(*task.child, *task.nextChild);</div>
+</div>
+<div>    else</div>
+<div>        // 走入此分支【child 的 name 是 html】</div>
+<div>
+<div>        task.parent-&gt;parserAppendChild(*task.child);</div>
+<div>}</div>
+</div>
+<div>===</div>
+<div>★ WebCore::ContainerNode::parserAppendChild(WebCore::Node&amp;)</div>
+<div>#0    0x0000000106cd1214 in WebCore::ContainerNode::parserAppendChild(WebCore::Node&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/ContainerNode.cpp:717</div>
+<div>
+<div>void ContainerNode::parserAppendChild(Node&amp; newChild)</div>
+</div>
+<div>{</div>
+<div>    ...</div>
+<div>    // this    WebCore::HTMLDocument *    0x11659f000    0x000000011659f000</div>
+<div>    // newChild    WebCore::DocumentType &amp;    0x0000000120bbd068</div>
+<div>    //      m_name m_data8    const LChar *    "html"    0x0000000109c9aba4</div>
+<div>
+<div>    {</div>
+<div>        NoEventDispatchAssertion assertNoEventDispatch;</div>
+</div>
+<div>        // FIXME: This method should take a PassRefPtr.</div>
+<div>        // 注意此函数，此函数执行比较简单</div>
+<div>        appendChildCommon(newChild);</div>
+<div>        // 此语句以后分析</div>
+<div>
+<div>        treeScope().adoptIfNeeded(&amp;newChild);</div>
+<div>    }</div>
+<div><br/></div>
+</div>
+<div>    newChild.updateAncestorConnectedSubframeCountForInsertion();</div>
+<div>    // 发出通知【可能的相关事件也会在这里触发】</div>
+<div>    notifyChildInserted(newChild, ChildChangeSourceParser);</div>
+<div>    // 设置style计算枚举类型，相关枚举解释见下</div>
+<div>    // 此函数标记当前元素的style改变类型，并通过更改m_nodeFlags来确定和设置当前元素的样式修改类型</div>
+<div>    // 同时在 ReconstructRenderTree 类型下也会通过updateAncestorsForStyleRecalc()同步更新此元素的祖先元素的style更新类型</div>
+<div>    // TODO ★ 和渲染树更新相关的函数调用，具体的渲染树处理逻辑会在相关章节介绍，这里不再赘述</div>
+<div>    // 深层调用：document().scheduleStyleRecalc(); 的作用是什么？</div>
+<div>    // 有关 StyleChangeMask 和 m_nodeFlags 的详细介绍，见附录</div>
+<div>
+<div>    newChild.setNeedsStyleRecalc(ReconstructRenderTree);</div>
+</div>
+<div>}</div>
+<div>---</div>
+<div>
+<div>// SyntheticStyleChange means that we need to go through the entire style change logic even though</div>
+<div>// no style property has actually changed. It is used to restructure the tree when, for instance,</div>
+<div>// RenderLayers are created or destroyed due to animation changes.</div>
+<div>enum StyleChangeType {</div>
+<div>    NoStyleChange = 0,</div>
+<div>    InlineStyleChange = 1 &lt;&lt; nodeStyleChangeShift,</div>
+<div>    FullStyleChange = 2 &lt;&lt; nodeStyleChangeShift,</div>
+<div>    SyntheticStyleChange = 3 &lt;&lt; nodeStyleChangeShift,</div>
+<div>    ReconstructRenderTree = 4 &lt;&lt; nodeStyleChangeShift,</div>
+<div>};</div>
+</div>
+<div>===</div>
+<div>★ WebCore::ContainerNode::appendChildCommon(WebCore::Node&amp;)</div>
+<div>#0    0x0000000106cd21e3 in WebCore::ContainerNode::appendChildCommon(WebCore::Node&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/ContainerNode.cpp:327</div>
+<div>
+<div>void ContainerNode::appendChildCommon(Node&amp; child)</div>
+</div>
+<div>{</div>
+<div>    // 标记自己的 m_parentNode 为 this</div>
+<div>
+<div>    child.setParentNode(this);</div>
+<div><br/></div>
+<div>    if (m_lastChild) {</div>
+<div>        child.setPreviousSibling(m_lastChild);</div>
+<div>        m_lastChild-&gt;setNextSibling(&amp;child);</div>
+</div>
+<div>    } else</div>
+<div>        // 第一个元素</div>
+<div>        m_firstChild = &amp;child;</div>
+<div>    // 最后一个元素</div>
+<div>
+<div>    m_lastChild = &amp;child;</div>
+</div>
+<div>}</div>
+<div>此函数的主要作用就是设置自己的各种指针：m_parentNode、m_lastChild、m_firstChild</div>
+<div>===</div>
+<div>自此，insert 函数执行完毕</div>
+</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010754430b in WebCore::executeInsertTask(WebCore::HTMLConstructionSiteTask&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:121</div>
+<div>    ...</div>
+<div>    insert(task); // 上面的大段分析即为此函数的执行细节</div>
+<div>    // 进入此函数【虚函数，空函数体】</div>
+<div>    task.child-&gt;beginParsingChildren();</div>
+<div>    ...</div>
+<div>===</div>
+<div>★ 上述函数执行完毕之后，函数跳出至：</div>
+<div>#0    0x000000010756f961 in WebCore::HTMLDocumentParser::constructTreeFromHTMLToken(WebCore::HTMLTokenizer::TokenPtr&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:324</div>
+<div>...</div>
+<div>m_treeBuilder-&gt;constructTree(token); // 执行完毕</div>
+<div>...</div>
+<div>===</div>
+<div>★ 直到while循环的循环体执行完毕：</div>
+<div>#0    0x000000010756f853 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:265</div>
+<div>    ...</div>
+<div>        constructTreeFromHTMLToken(token);</div>
+<div>    // 开始做 isStopped 的判断，然后选择继续或者停止执行循环体</div>
+<div>    } while (!isStopped());</div>
+<div>    ...</div>
+<div>===</div>
+<div>★ 当然，字节流不解析完毕，是不会停止的，直至再次跳入循环：</div>
+<div>#0    0x000000010756f367 in WebCore::HTMLDocumentParser::pumpTokenizerLoop(WebCore::HTMLDocumentParser::SynchronousMode, bool, WebCore::PumpSession&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:229</div>
+<div>// 函数体【此函数体会不断执行，直到字节流全部解析成DOM树】</div>
+<div>
+<div>bool HTMLDocumentParser::pumpTokenizerLoop(SynchronousMode mode, bool parsingFragment, PumpSession&amp; session)</div>
+<div>{</div>
+<div>    do {</div>
+<div>        if (UNLIKELY(isWaitingForScripts())) {</div>
+<div>            if (mode == AllowYield &amp;&amp; m_parserScheduler-&gt;shouldYieldBeforeExecutingScript(session))</div>
+<div>                return true;</div>
+</div>
+<div>            runScriptsForPausedTreeBuilder();</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>【附录1】</div>
+<div>有关 StyleChangeMask 和 m_nodeFlags 的详细介绍</div>
+<div>首先：mutable uint32_t m_nodeFlags; // 其类型是 32 位无符号整型</div>
+<div>StyleChangeMask = 1 &lt;&lt; nodeStyleChangeShift | 1 &lt;&lt; (nodeStyleChangeShift + 1) | 1 &lt;&lt; (nodeStyleChangeShift + 2)</div>
+<div>且：const int nodeStyleChangeShift = 14;</div>
+<div>即：StyleChangeMask = 114688；// 这个 114688 是个何许人，转化成二进制可以看到此掩码的真实模样：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B5%20-%20m_tokenizer.nextToken%20-%20Doctype.resources/4ACB7C41-05B5-463A-88CB-3C863ACEA5E7.png" height="334" width="790"/></div>
+<div>即：第14～16位即为 StyleChangeMask 的掩码位置，再看：</div>
+<div>enum StyleChangeType { </div>
+<div>    NoStyleChange = 0, </div>
+<div>    InlineStyleChange = 1 &lt;&lt; nodeStyleChangeShift, // 1 &lt;&lt; 14 即第14位为1</div>
+<div>    FullStyleChange = 2 &lt;&lt; nodeStyleChangeShift, // 2 &lt;&lt; 14 即第15位为1</div>
+<div>    SyntheticStyleChange = 3 &lt;&lt; nodeStyleChangeShift, // 3 &lt;&lt; 14 即第14和15都为1</div>
+<div>    ReconstructRenderTree = 4 &lt;&lt; nodeStyleChangeShift, // 4 &lt;&lt; 14 即第16位为1</div>
+<div>};</div>
+<div>如何获取当前的StyleChangeType：</div>
+<div>return static_cast&lt;StyleChangeType&gt;(m_nodeFlags &amp; StyleChangeMask); // 就这样获取，很好理解吧，按位与</div>
+<div>如何设置新的StyleChangeType：</div>
+<div>m_nodeFlags = (m_nodeFlags &amp; ~StyleChangeMask) | changeType; </div>
+<div>前面的：(m_nodeFlags &amp; ~StyleChangeMask) 其实是清空第14～16位（因为它就代表样式的ChangeStyle），然后再执行按位或设置新的changeType，而这个changeType肯定是从enum StyleChangeType中的某一个。</div>
+<div>---------</div>
+<div>有关掩码的实例：</div>
+<div>示例[编辑]</div>
+<div>创造一个掩码msk把一个指令cmd的第0~3位（右边第一位为0位）清零：</div>
+<div>指令cmd = 0110011011</div>
+<div>创造掩码msk = 0000001111</div>
+<div>用掩码的反码~msk和指令cmd做按位与运算cmd &amp; ~msk = 0110011011 &amp; 1111110000 = 0110010000</div>
+<div>则指定的第0~3位已被清零。</div>
+<div><br/></div>
+<div>【附录2】</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#2    0x0000000107541bf9 in WebCore::HTMLConstructionSite::setCompatibilityModeFromDoctype(WTF::String const&amp;, WTF::String const&amp;, WTF::String const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLConstructionSite.cpp:398</div>
+<div><br/></div>
+<div>
+<div>void HTMLConstructionSite::setCompatibilityModeFromDoctype(const String&amp; name, const String&amp; publicId, const String&amp; systemId)</div>
+</div>
+<div>{</div>
+<div>    // There are three possible compatibility modes:【有三种兼容模式】</div>
+<div>
+<div>    // Quirks - quirks mode emulates WinIE and NS4. CSS parsing is also relaxed in this mode, e.g., unit types can</div>
+<div>    // be omitted from numbers.</div>
+<div>    // Limited Quirks - This mode is identical to no-quirks mode except for its treatment of line-height in the inline box model.</div>
+<div>    // No Quirks - no quirks apply. Web pages will obey the specifications to the letter.【标准模式】</div>
+<div><br/></div>
+<div>    // Check for Quirks Mode.</div>
+<div>    if (name != "html"</div>
+<div>        || publicId.startsWith("+//Silmaril//dtd html Pro v0r11 19970101//", false)</div>
+<div>        || publicId.startsWith("-//AdvaSoft Ltd//DTD HTML 3.0 asWedit + extensions//", false)</div>
+<div>        || publicId.startsWith("-//AS//DTD HTML 3.0 asWedit + extensions//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0 Level 1//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0 Level 2//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0 Strict Level 1//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0 Strict Level 2//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0 Strict//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.0//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 2.1E//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 3.0//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 3.2 Final//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 3.2//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML 3//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Level 0//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Level 1//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Level 2//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Level 3//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Strict Level 0//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Strict Level 1//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Strict Level 2//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Strict Level 3//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML Strict//", false)</div>
+<div>        || publicId.startsWith("-//IETF//DTD HTML//", false)</div>
+<div>        || publicId.startsWith("-//Metrius//DTD Metrius Presentational//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 2.0 HTML Strict//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 2.0 HTML//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 2.0 Tables//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 3.0 HTML Strict//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 3.0 HTML//", false)</div>
+<div>        || publicId.startsWith("-//Microsoft//DTD Internet Explorer 3.0 Tables//", false)</div>
+<div>        || publicId.startsWith("-//Netscape Comm. Corp.//DTD HTML//", false)</div>
+<div>        || publicId.startsWith("-//Netscape Comm. Corp.//DTD Strict HTML//", false)</div>
+<div>        || publicId.startsWith("-//O'Reilly and Associates//DTD HTML 2.0//", false)</div>
+<div>        || publicId.startsWith("-//O'Reilly and Associates//DTD HTML Extended 1.0//", false)</div>
+<div>        || publicId.startsWith("-//O'Reilly and Associates//DTD HTML Extended Relaxed 1.0//", false)</div>
+<div>        || publicId.startsWith("-//SoftQuad Software//DTD HoTMetaL PRO 6.0::19990601::extensions to HTML 4.0//", false)</div>
+<div>        || publicId.startsWith("-//SoftQuad//DTD HoTMetaL PRO 4.0::19971010::extensions to HTML 4.0//", false)</div>
+<div>        || publicId.startsWith("-//Spyglass//DTD HTML 2.0 Extended//", false)</div>
+<div>        || publicId.startsWith("-//SQ//DTD HTML 2.0 HoTMetaL + extensions//", false)</div>
+<div>        || publicId.startsWith("-//Sun Microsystems Corp.//DTD HotJava HTML//", false)</div>
+<div>        || publicId.startsWith("-//Sun Microsystems Corp.//DTD HotJava Strict HTML//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 3 1995-03-24//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 3.2 Draft//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 3.2 Final//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 3.2//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 3.2S Draft//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 4.0 Frameset//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML 4.0 Transitional//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML Experimental 19960712//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD HTML Experimental 970421//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD W3 HTML//", false)</div>
+<div>        || publicId.startsWith("-//W3O//DTD W3 HTML 3.0//", false)</div>
+<div>        || equalLettersIgnoringASCIICase(publicId, "-//w3o//dtd w3 html strict 3.0//en//")</div>
+<div>        || publicId.startsWith("-//WebTechs//DTD Mozilla HTML 2.0//", false)</div>
+<div>        || publicId.startsWith("-//WebTechs//DTD Mozilla HTML//", false)</div>
+<div>        || equalLettersIgnoringASCIICase(publicId, "-/w3c/dtd html 4.0 transitional/en")</div>
+<div>        || equalLettersIgnoringASCIICase(publicId, "html")</div>
+<div>        || equalLettersIgnoringASCIICase(systemId, "http://www.ibm.com/data/dtd/v11/ibmxhtml1-transitional.dtd")</div>
+<div>        || (systemId.isEmpty() &amp;&amp; publicId.startsWith("-//W3C//DTD HTML 4.01 Frameset//", false))</div>
+<div>        || (systemId.isEmpty() &amp;&amp; publicId.startsWith("-//W3C//DTD HTML 4.01 Transitional//", false))) {</div>
+<div>        setCompatibilityMode(DocumentCompatibilityMode::QuirksMode);</div>
+<div>        return;</div>
+<div>    }</div>
+<div><br/></div>
+<div>    // Check for Limited Quirks Mode.</div>
+<div>    if (publicId.startsWith("-//W3C//DTD XHTML 1.0 Frameset//", false)</div>
+<div>        || publicId.startsWith("-//W3C//DTD XHTML 1.0 Transitional//", false)</div>
+<div>        || (!systemId.isEmpty() &amp;&amp; publicId.startsWith("-//W3C//DTD HTML 4.01 Frameset//", false))</div>
+<div>        || (!systemId.isEmpty() &amp;&amp; publicId.startsWith("-//W3C//DTD HTML 4.01 Transitional//", false))) {</div>
+<div>        setCompatibilityMode(DocumentCompatibilityMode::LimitedQuirksMode);</div>
+<div>        return;</div>
+<div>    }</div>
+</div>
+<div><br/></div>
+<div>    // Otherwise we are No Quirks Mode.【标准模式】</div>
+<div>
+<div>    setCompatibilityMode(DocumentCompatibilityMode::NoQuirksMode);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+</div>
+</body></html>

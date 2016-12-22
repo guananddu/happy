@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-16 16:23:54 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-18 14:31:20 +0000"/><title>资源加载流程1-5 - HTML 文档资源</title></head><body>
+<div>
+<div>
+<div>
+<div>前面 1-4 节其实分析了很多真正开始加载 Document 资源之前的逻辑，从这一节开始分析：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010709ed55 in WebCore::DocumentLoader::startLoadingMainResource() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:1455</div>
+</div>
+<div><br/></div>
+</div>
+</div>
+</div>
+<div>DocumentLoader::startLoadingMainResource() 函数则意味着文档请求的真正开始。</div>
+<div>此时的测试请求 URL 为：<a href="http://localhost:8111/sample.html?5">http://localhost:8111/sample.html?8</a></div>
+<div><br/></div>
+<div>DocumentLoader::startLoadingMainResource() 函数为一个很长的函数，以下只捡重点说一下：</div>
+<div>首先关注函数开始时候的作用域变量：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    WebDocumentLoaderMac *    0x1165f2400    0x00000001165f2400</div>
+<div>     WebCore::DocumentLoader    WebCore::DocumentLoader</div>
+<div>          m_mainDocumentError    WebCore::ResourceError</div>
+<div>          // 可以理解为 documentLoader 的 loaderTiming 计时器  </div>
+<div>          m_documentLoadTiming    WebCore::DocumentLoadTiming     </div>
+<div>     m_dataSource    WebDataSource *    0x608000008010    0x0000608000008010</div>
+<div>     m_isDataSourceRetained    bool    true</div>
+<div>     m_resourceLoadDelegate    WTF::RetainPtr&lt;id&gt;  </div>
+<div>     m_downloadDelegate    WTF::RetainPtr&lt;id&gt;    </div>
+<div>     m_loadingResources    WTF::HashSet&lt;unsigned long, WTF::IntHash&lt;unsigned long&gt;, WTF::HashTraits&lt;unsigned long&gt; &gt;     </div>
+</div>
+<div><br/></div>
+<div>每一个 WebCore::DocumentLoader 都有一个 WebCore::DocumentLoadTiming 对象作为其时间度量成员对象。通过：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void DocumentLoadTiming::markNavigationStart()</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::DocumentLoadTiming *    0x1165f2f30    0x00000001165f2f30</div>
+<div>
+<div>    ASSERT(!m_navigationStart &amp;&amp; !m_referenceMonotonicTime &amp;&amp; !m_referenceWallTime);</div>
+<div><br/></div>
+<div>    m_navigationStart = m_referenceMonotonicTime = monotonicallyIncreasingTime();</div>
+<div>    m_referenceWallTime = currentTime();</div>
+</div>
+<div>}</div>
+</div>
+<div><br/></div>
+<div>来记录时间点。有关 monotonicallyIncreasingTime() 函数体内容的解释参看：</div>
+<div><a href="http://codecooker.cn/2014/12/iOS%E6%B5%8B%E9%87%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%97%B6%E9%97%B4.html">http://codecooker.cn/2014/12/iOS%E6%B5%8B%E9%87%8F%E4%BB%A3%E7%A0%81%E6%89%A7%E8%A1%8C%E6%97%B6%E9%97%B4.html</a></div>
+<div>或者搜索笔记“iOS测量代码执行时间”，重点：</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>mach_absolute_time是一个<b>CPU/总线依赖函数</b>，返回一个<b>基于系统启动后的时钟”嘀嗒”数</b>。它没有很好的文档定义，但这不应该成为使用它的障碍，因为在MAC OS X上可以确保它的行为，并且，它包含系统时钟包含的所有时间区域。那是否应该在产品代码中使用它呢？可能不应该。但是对于测试，它却恰到好处。</div>
+</div>
+<div><br/></div>
+<div>截图：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-5%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/372A01C7-E4EC-411B-A764-18F9E14B3474.png" height="604" width="1818"/></div>
+<div>综合材料可以判断：m_navigationStart 和 m_referenceMonotonicTime 是基于操作系统启动以后的“嘀嗒数”算出的精确度在纳秒级别的秒数值。</div>
+<div><br/></div>
+<div>而 currentTime() 则返回从 1970-01-01 00:00:00 +0000 (UTC) 到现在的秒数和微秒数，返回精确到微妙的秒数，并存储在：m_referenceWallTime 中：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>double currentTime()</div>
+<div>{</div>
+<div>    struct timeval now;</div>
+<div>    gettimeofday(&amp;now, 0);</div>
+<div>    return now.tv_sec + now.tv_usec / 1000000.0;</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>看下两个值的截图：</div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-5%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/7B620C24-078F-487B-8534-5416F79FC0F9.png" height="186" width="1008"/></div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>关于 m_contentFilter 的作用是什么，暂时还不明了，咱不赘述。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>不知道为什么，设置请求头相关字段的逻辑会被执行两遍：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>    // FIXME: Is there any way the extra fields could have not been added by now?</div>
+<div>
+<div>    // If not, it would be great to remove this line of code.</div>
+<div>    // Note that currently, some requests may have incorrect extra fields even if this function has been called,</div>
+<div>    // because we pass a wrong loadType (see FIXME in addExtraFieldsToMainResourceRequest()).</div>
+<div>    frameLoader()-&gt;addExtraFieldsToMainResourceRequest(m_request);</div>
+</div>
+</div>
+<div><br/></div>
+<div>再次设置完毕请求头之后，设置 Timing 打点，标记确实开始 fetch 内容：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>m_fetchStart = monotonicallyIncreasingTime();</div>
+</div>
+</div>
+<div><br/></div>
+<div>紧接着开始 willSendRequest 的逻辑，同时在这里初始化了一个 ResourceResponse 的对象作为入参：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>willSendRequest(m_request, ResourceResponse());</div>
+</div>
+</div>
+<div><br/></div>
+<div>进入此函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x000000010709a02a in WebCore::DocumentLoader::willSendRequest(WebCore::ResourceRequest&amp;, WebCore::ResourceResponse const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:507</div>
+</div>
+<div><br/></div>
+<div>看下其上下文：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>this    WebDocumentLoaderMac *    0x1165f2400    0x00000001165f2400</div>
+<div>redirectResponse    const WebCore::ResourceResponse &amp;    0x00007fff5fbf79f0</div>
+<div>newRequest    WebCore::ResourceRequest &amp;    0x00000001165f28d0</div>
+<div>didReceiveRedirectResponse    bool    false</div>
+</div>
+<div><br/></div>
+<div>通过下面的函数，来判断请求是不是被允许：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>bool FrameLoader::checkIfFormActionAllowedByCSP(const URL&amp; url, bool didReceiveRedirectResponse) const</div>
+</div>
+<div>{</div>
+<div>    // this    const WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div>
+<div>    // didReceiveRedirectResponse    bool    false</div>
+<div>    // url    const WebCore::URL &amp;    0x00000001165f28d0</div>
+<div>    //      m_data8    const LChar *    "http://localhost:8111/sample.html?8"    0x0000000115553f64</div>
+<div>    // m_submittedFormURL    WebCore::URL  </div>
+<div>    //      m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div>
+<div>    // 因为这本不是表单提交，姑直接跳出</div>
+<div>
+<div>    if (m_submittedFormURL.isEmpty())</div>
+<div>        return true;</div>
+<div><br/></div>
+<div>    auto redirectResponseReceived = didReceiveRedirectResponse ? ContentSecurityPolicy::RedirectResponseReceived::Yes : ContentSecurityPolicy::RedirectResponseReceived::No;</div>
+<div>    return m_frame.document()-&gt;contentSecurityPolicy()-&gt;allowFormAction(url, false /* overrideContentSecurityPolicy */, redirectResponseReceived);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>通过 WebCore::ResourceLoadObserver::logFrameNavigation 来记录日志：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>#0    0x00000001088299c3 in WebCore::ResourceLoadObserver::logFrameNavigation(WebCore::Frame const&amp;, WebCore::Frame const&amp;, WebCore::ResourceRequest const&amp;, WebCore::ResourceResponse const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/ResourceLoadObserver.cpp:62</div>
+</div>
+<div><br/></div>
+<div>一下两段，前半部分设置 cookie 相关信息，后半部分设置缓存相关策略：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    // Update cookie policy base URL as URL changes, except for subframes, which use the</div>
+<div>    // URL of the main frame which doesn't change when we redirect.</div>
+</div>
+<div>    if (m_frame-&gt;isMainFrame())</div>
+<div>        // 不甚明了</div>
+<div>
+<div>        newRequest.setFirstPartyForCookies(newRequest.url());</div>
+<div><br/></div>
+<div>    // If we're fielding a redirect in response to a POST, force a load from origin, since</div>
+<div>    // this is a common site technique to return to a page viewing some data that the POST</div>
+<div>    // just modified.</div>
+</div>
+<div>    // Also, POST requests always load from origin, but this does not affect subresources.</div>
+<div>    // newRequest    WebCore::ResourceRequest &amp;    0x00000001165f28d0</div>
+<div>    //      WebCore::ResourceRequestBase    WebCore::ResourceRequestBase   </div>
+<div>    //           m_cachePolicy    WebCore::ResourceRequestCachePolicy    UseProtocolCachePolicy</div>
+<div>    // 第二个判断不成立，因为我们的测试是一个简易的 GET 请求测试</div>
+<div>
+<div>    if (newRequest.cachePolicy() == UseProtocolCachePolicy &amp;&amp; isPostOrRedirectAfterPost(newRequest, redirectResponse))</div>
+<div>        newRequest.setCachePolicy(ReloadIgnoringCacheData);</div>
+</div>
+</div>
+<div><br/></div>
+<div>再贴一下缓存枚举类：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>namespace WebCore {</div>
+<div><br/></div>
+</div>
+<div>    enum ResourceRequestCachePolicy {</div>
+<div>        // 我们属于这个</div>
+<div>
+<div>        UseProtocolCachePolicy, // normal load</div>
+<div>        ReloadIgnoringCacheData, // reload</div>
+<div>        ReturnCacheDataElseLoad, // back/forward or encoding change - allow stale data</div>
+<div>        ReturnCacheDataDontLoad  // results of a post - allow stale data and only use cache</div>
+</div>
+<div>    };</div>
+<div>...</div>
+</div>
+<div><br/></div>
+<div>总的来说，willSendRequest 做了：CSP（Content Security Policy）检查、记录日志、对 Cookies 做初步处理、确认缓存策略、内容过滤机制（ContentFilter？），以及设置自身 Request 对象这些前期操作。</div>
+<div><br/></div>
+<div>最后通过下面的判断语句返回 willSendRequest 函数：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    // FIXME: Ideally we'd stop the I/O until we hear back from the navigation policy delegate</div>
+<div>    // listener. But there's no way to do that in practice. So instead we cancel later if the</div>
+<div>    // listener tells us to. In practice that means the navigation policy needs to be decided</div>
+<div>    // synchronously for these redirect cases.</div>
+</div>
+<div>    if (!didReceiveRedirectResponse)</div>
+<div>        return;</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>关于：ApplicationCacheHost::maybeLoadMainResource：</div>
+<div><br/></div>
+<div>执行此函数就像此函数中的注释：Check if this request should be loaded from the application cache。先看一段插曲：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>Do not use appcache unless it is REALLY 100% EXACTLY WHAT YOU WANT TO DO</div>
+<div>Even if it IS 100% EXACTLY WHAT YOU WANT TO DO, *DO NOT* use appcache until you are 100% CERTAIN that you are not going to make a single change to that page (or any file that it links to) for a LONG time.</div>
+<div>Delete the manifest file from the server -- if the browser can't find the manifest file, then it will clear its cache... ...this will also turn caching off for everyone.</div>
+<div>Don't turn it on again until it's 100% CORRECT</div>
+<div>Dealing with appcache is miserable, often.</div>
+</div>
+<div><br/></div>
+<div>其函数代码大体逻辑用途可以猜测出来，如果检测 ApplicationCache 启用了，则从中获取资源作为响应，并且设置好 substituteData 变量作为“响应替代品”。</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>再次复制一个局部的 request 变量，并且设置其 m_requester 、并且移除部分请求头看下函数体：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>    ResourceRequest request(m_request);</div>
+<div>    request.setRequester(ResourceRequest::Requester::Main);</div>
+<div>    // If this is a reload the cache layer might have made the previous request conditional. DocumentLoader can't handle 304 responses itself.</div>
+</div>
+<div>    request.makeUnconditional();</div>
+</div>
+<div><br/></div>
+<div>将请求设置为“无条件”请求：- -</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>
+<div>void ResourceRequestBase::makeUnconditional()</div>
+</div>
+<div>{</div>
+<div>    // this    WebCore::ResourceRequestBase *    0x7fff5fbf7280    0x00007fff5fbf7280</div>
+<div>    updateResourceRequest();</div>
+<div>    // WebCore::conditionalHeaderNames    const WebCore::HTTPHeaderName [5]  </div>
+<div>    //     [0]    const WebCore::HTTPHeaderName    IfMatch</div>
+<div>    //     [1]    const WebCore::HTTPHeaderName    IfModifiedSince </div>
+<div>    //     [2]    const WebCore::HTTPHeaderName    IfNoneMatch</div>
+<div>    //     [3]    const WebCore::HTTPHeaderName    IfRange</div>
+<div>    //     [4]    const WebCore::HTTPHeaderName    IfUnmodifiedSince</div>
+<div>
+<div>    for (auto headerName : conditionalHeaderNames)</div>
+<div>        m_httpHeaderFields.remove(headerName);</div>
+<div>}</div>
+</div>
+</div>
+<div><br/></div>
+<div>
+<hr/></div>
+<div>★开始设置 CacheResourceLoader 相关：</div>
+<div><br/></div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
+<div>     // 初始化配置项 </div>
+<div>     static NeverDestroyed&lt;ResourceLoaderOptions&gt; mainResourceLoadOptions(SendCallbacks, SniffContent, BufferData, AllowStoredCredentials, AskClientForAllCredentials, ClientRequestedCredentials, SkipSecurityCheck, UseDefaultOriginRestrictionsForType, IncludeCertificateInfo, ContentSecurityPolicyImposition::DoPolicyCheck, DefersLoadingPolicy::AllowDefersLoading, CachingPolicy::AllowCaching);</div>
+<div>    // 通过配置对象初始化 cachedResourceRequest 对象</div>
+<div>    // cachedResourceRequest    WebCore::CachedResourceRequest   </div>
+<div>    CachedResourceRequest cachedResourceRequest(request, mainResourceLoadOptions);</div>
+<div>    // 设置 cachedResourceRequest 的 m_initiatingDocumentLoader 成员</div>
+<div>    //      m_initiatingDocumentLoader    WTF::RefPtr&lt;WebCore::DocumentLoader&gt;   </div>
+<div>    cachedResourceRequest.setInitiator(*this);</div>
+</div>
+<div><br/></div>
+</body></html>
