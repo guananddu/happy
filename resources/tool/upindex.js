@@ -46,13 +46,20 @@ function postIndex( key, listArr ) {
     let targetFile = path.join( target[ key ], 'index.html' );
     let oldContent = fs.readFileSync( targetFile ).toString();
 
-    fs.writeFileSync( targetFile, oldContent.replace(
-        /<div class="list-container">(.|\n)*?<\/div>/,
-        [
-            '<div class="list-container">',
-                indexArr.join( '<br />\n' ),
-            '</div>'
-        ].join( '\n' )
-    ) );
+    fs.writeFileSync(
+        targetFile,
+        oldContent
+            .replace(
+                /<div class="list-container">(.|\n)*?<\/div>/,
+                [
+                    '<div class="list-container">',
+                        indexArr.join( '<br />\n' ),
+                    '</div>'
+                ].join( '\n' )
+            )
+            .replace(
+                /\[DATE\]/, ( new Date ).toString()
+            )
+    );
 
 }
