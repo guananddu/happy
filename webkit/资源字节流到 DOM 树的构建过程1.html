@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-20 06:01:44 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-20 06:04:56 +0000"/><title>资源字节流到 DOM 树的构建过程1</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-20 06:01:44 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:27:41 +0000"/><title>资源字节流到 DOM 树的构建过程1</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,23 +11,18 @@
 <h2>资源字节流到 DOM 树的构建过程1</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div>开篇，先上两幅图，来大体预览一下将要分析的具体流程：</div>
 <div><br/></div>
-<div>类关系图谱：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B1.resources/AE60CF64-CD1C-4664-8768-0CF9EBA22D6A.png" height="auto" width="100%"/></div>
+<div>类关系图谱：</div><div><br/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B1.resources/AE60CF64-CD1C-4664-8768-0CF9EBA22D6A.png" height="auto" width="100%"/><br/></div>
 <div><br/></div>
-<div>逻辑执行图：</div>
-</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B1.resources/83B9E65C-F99B-4E7E-A8F7-661B02AC1A53.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div>之后我们会按照：《资源加载流程1-9 - HTML 文档资源》最后的调用栈截图来分析具体的执行流程。</div>
-
+<div>逻辑执行图：</div><div><br/></div>
+</div><div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B1.resources/83B9E65C-F99B-4E7E-A8F7-661B02AC1A53.png" height="auto" width="100%"/><br/></div><div><br/></div><div>之后我们会按照：《资源加载流程1-9 - HTML 文档资源》最后的调用栈截图来分析具体的执行流程。</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

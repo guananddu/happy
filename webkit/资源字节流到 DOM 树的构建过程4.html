@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-24 08:58:32 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-25 09:01:03 +0000"/><title>资源字节流到 DOM 树的构建过程4</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-24 08:58:32 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:30:02 +0000"/><title>资源字节流到 DOM 树的构建过程4</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,144 +11,28 @@
 <h2>资源字节流到 DOM 树的构建过程4</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000107096372 in WebCore::DocumentLoader::commitLoad(char const*, int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:830</div>
-<div><br/></div>
-<div>这里最终调入：</div>
-<div><br/></div>
-<div>frameLoader-&gt;client().committedLoad(this, data, length); // 下面截图的第9层函数调用</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000107096372 in WebCore::DocumentLoader::commitLoad(char const*, int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:830</div><div><br/></div><div>这里最终调入：</div><div><br/></div><div>frameLoader-&gt;client().committedLoad(this, data, length); // 下面截图的第9层函数调用</div></div>
 <div><br/></div>
 <hr/>
-<div>看下此时的调用栈：</div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B4.resources/E9A098D5-8E69-4B62-B3F3-7C220BDBDF37.png" height="auto" width="100%"/></div>
-<div>为了便于理解，我们直接把断点打入：</div>
+<div><br/></div><div>看下此时的调用栈：</div><div><br/></div>
+<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B4.resources/E9A098D5-8E69-4B62-B3F3-7C220BDBDF37.png" height="auto" width="100%"/><br/></div>
+<div><br/></div><div>为了便于理解，我们直接把断点打入：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010756e18f in WebCore::HTMLDocumentParser::pumpTokenizerIfPossible(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:168</div>
-<div><br/></div>
-<div>以上截图即为此时的调用栈</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010756e18f in WebCore::HTMLDocumentParser::pumpTokenizerIfPossible(WebCore::HTMLDocumentParser::SynchronousMode) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/parser/HTMLDocumentParser.cpp:168</div><div><br/></div><div>以上截图即为此时的调用栈</div></div>
 <div><br/></div>
 <div>可以看出，经过 WebCore::DocumentLoader::commitLoad(char const*, int) 函数调用，“通知”到client层，再最终由client层调用至：WebCore::DocumentLoader::commitData(char const*, unsigned long) 这里：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000107093805 in WebCore::DocumentLoader::commitData(char const*, unsigned long) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:850</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000107093805 in WebCore::DocumentLoader::commitData(char const*, unsigned long) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:850</div><div><br/></div><div><div>void DocumentLoader::commitData(const char* bytes, size_t length)</div><div>{</div></div><div>    if (!m_gotFirstByte) {</div><div>        // 这里标记为true</div><div>        m_gotFirstByte = true;</div><div>        // m_writer    WebCore::DocumentWriter  </div><div>        // 这个函数很重要 </div><div>        m_writer.begin(documentURL(), false);</div><div>        m_writer.setDocumentWasLoadedAsPartOfNavigation();</div><div>...</div></div>
 <div><br/></div>
-<div>
-<div>void DocumentLoader::commitData(const char* bytes, size_t length)</div>
-<div>{</div>
-</div>
-<div>    if (!m_gotFirstByte) {</div>
-<div>        // 这里标记为true</div>
-<div>        m_gotFirstByte = true;</div>
-<div>        // m_writer    WebCore::DocumentWriter  </div>
-<div>        // 这个函数很重要 </div>
-<div>
-<div>        m_writer.begin(documentURL(), false);</div>
-</div>
-<div>        m_writer.setDocumentWasLoadedAsPartOfNavigation();</div>
-<div>...</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001070d7576 in WebCore::DocumentWriter::begin(WebCore::URL const&amp;, bool, WebCore::Document*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentWriter.cpp:127</div>
-<div><br/></div>
-<div>
-<div>void DocumentWriter::begin(const URL&amp; urlReference, bool dispatch, Document* ownerDocument)</div>
-</div>
-<div>{</div>
-<div>...</div>
-<div><br/></div>
-<div>此函数运行时候的上下文：</div>
-<div>this    WebCore::DocumentWriter *    0x1165950a0    0x00000001165950a0</div>
-<div>urlReference    const WebCore::URL &amp;    0x00007fff5fbfd488</div>
-<div>     m_data8    const LChar *    "http://localhost:8111/sample.html?110”    0x0000000121f21894【最新访问的url】</div>
-<div>dispatch    bool    false</div>
-<div><br/></div>
-<div>函数调用片段：</div>
-<div>
-<div>    // Create a new document before clearing the frame, because it may need to</div>
-<div>    // inherit an aliased security context.</div>
-</div>
-<div>    Ref&lt;Document&gt; document = createDocument(url);</div>
-<div><br/></div>
-<div>此处的 createDocument(url) 最终调入：</div>
-<div>#0    0x0000000107128ed1 in WebCore::DOMImplementation::createDocument(WTF::String const&amp;, WebCore::Frame*, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/DOMImplementation.cpp:324</div>
-<div>#0    0x000000010756a801 in WebCore::HTMLDocument::HTMLDocument(WebCore::Frame*, WebCore::URL const&amp;, unsigned char, unsigned int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/HTMLDocument.cpp:88</div>
-<div><br/></div>
-<div>     // 通过新创建出来的 document 来创建 DOMWindow</div>
-<div>     document-&gt;createDOMWindow();</div>
-<div>最终调入：</div>
-<div>#0    0x000000010702561c in WebCore::Document::createDOMWindow() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:4060</div>
-<div style="margin-left:80px;">void Document::createDOMWindow()</div>
-<div style="margin-left:80px;">{</div>
-<div style="margin-left:80px;">    ASSERT(m_frame);</div>
-<div style="margin-left:80px;">    ASSERT(!m_domWindow);</div>
-<div style="margin-left:80px;"><br/></div>
-<div style="margin-left:80px;">    m_domWindow = DOMWindow::create(this);</div>
-<div style="margin-left:80px;"><br/></div>
-<div style="margin-left:80px;">    ASSERT(m_domWindow-&gt;document() == this);</div>
-<div style="margin-left:80px;">    ASSERT(m_domWindow-&gt;frame() == m_frame);</div>
-<div style="margin-left:80px;">}</div>
-<div><br/></div>
-<div>     // 为 m_frame 设置document:</div>
-<div>     m_frame-&gt;setDocument(document.copyRef());</div>
-<div>...</div>
-<div><br/></div>
-<div>＝＝＝</div>
-<div>★总结：WebCore::DocumentWriter::begin 函数主要工作：创建新的 Document 对象，并且用其 Document 对象创建 DOMWindow 对象，并且设置 script 运行环境相关，并且设置 document-&gt;setEncoder，最终调用：FrameLoader 的 didBeginDocument 函数。</div>
-<div>在 WebCore::FrameLoader::didBeginDocument(bool) 函数中，设置 document 的状态为：Document::Loading。</div>
-<div>通过 initContentSecurityPolicy 初始化安全策略，通过 HTTPHeaderName::XDNSPrefetchControl 响应头判断 DNP Prefetche 的策略，设置 contentSecurityPolicy 策略；具体处理 CSP 相关的安全策略是在：</div>
-<div>WebCore::ContentSecurityPolicyResponseHeaders::ContentSecurityPolicyResponseHeaders(WebCore::ResourceResponse const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/page/csp/ContentSecurityPolicyResponseHeaders.cpp:51</div>
-<div>这个位置。主要是判断响应头中与 CSP 相关的响应头是不是存在，最后交给：</div>
-<div>#0    0x0000000106d16824 in WebCore::ContentSecurityPolicy::didReceiveHeaders(WebCore::ContentSecurityPolicyResponseHeaders const&amp;, WebCore::ContentSecurityPolicy::ReportParsingErrors) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/page/csp/ContentSecurityPolicy.cpp:143</div>
-<div>来处理。</div>
-<div>从响应头得知页面语言是什么。</div>
-<div>＝＝＝</div>
-<div>★ WebCore::DocumentWriter::begin 中会再调用：</div>
-<div>#0    0x000000010701df84 in WebCore::Document::implicitOpen() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:2588</div>
-<div>此函数来做一下初始化：取消目前的 Parsing 工作、设置兼容模式（setCompatibilityMode(DocumentCompatibilityMode::NoQuirksMode)）、创建 Parser、设置 Document 的 ReadyState 为 Loading（setReadyState(Loading)）。</div>
-<div>＝＝＝</div>
-<div>★ WebCore::DocumentWriter::begin 的最后，设置自身（writer）状态为：StartedWritingState：</div>
-<div>m_state = StartedWritingState;</div>
-<div>＝＝＝</div>
-</div>
-</div>
-<div><br/></div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B4.resources/475A8CA6-FDC7-4BB4-8F67-B33F75F29CC0.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>再回到：WebCore::DocumentLoader::commitData(char const*, unsigned long)：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>★ 调用：</div>
-<div>#0    0x00000001073fc04c in WebCore::FrameLoaderStateMachine::creatingInitialEmptyDocument() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoaderStateMachine.cpp:54</div>
-<div>此位置函数，将 this    const WebCore::FrameLoaderStateMachine *    0x1155dfcd0    0x00000001155dfcd0 自身状态设置为：</div>
-<div>CreatingInitialEmptyDocument</div>
-<div>===</div>
-<div>★ 通过调用：FrameLoader::receivedFirstData 函数，来 dispatch 到 client 各种消息</div>
-<div>＝＝＝</div>
-<div>★ 设置 encoding 变量：</div>
-<div>if (overrideEncoding().isNull()) {</div>
-<div>    userChosen = false;</div>
-<div>    encoding = response().textEncodingName();</div>
-<div>...</div>
-<div>m_writer.setEncoding(encoding, userChosen);</div>
-<div>===</div>
-<div>★ 最后：调入重要函数：</div>
-<div>m_writer.addData(bytes, length);</div>
-</div>
-<div><br/></div>
-
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001070d7576 in WebCore::DocumentWriter::begin(WebCore::URL const&amp;, bool, WebCore::Document*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentWriter.cpp:127</div><div><br/></div><div>void DocumentWriter::begin(const URL&amp; urlReference, bool dispatch, Document* ownerDocument)</div><div>{</div><div>...</div><div><br/></div><div>此函数运行时候的上下文：</div><div>this    WebCore::DocumentWriter *    0x1165950a0    0x00000001165950a0</div><div>urlReference    const WebCore::URL &amp;    0x00007fff5fbfd488</div><div>     m_data8    const LChar *    "http://localhost:8111/sample.html?110”    0x0000000121f21894【最新访问的url】</div><div>dispatch    bool    false</div><div><br/></div><div>函数调用片段：</div><div><div>    // Create a new document before clearing the frame, because it may need to</div><div>    // inherit an aliased security context.</div></div><div>    Ref&lt;Document&gt; document = createDocument(url);</div><div><br/></div><div>此处的 createDocument(url) 最终调入：</div><div>#0    0x0000000107128ed1 in WebCore::DOMImplementation::createDocument(WTF::String const&amp;, WebCore::Frame*, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/DOMImplementation.cpp:324</div><div>#0    0x000000010756a801 in WebCore::HTMLDocument::HTMLDocument(WebCore::Frame*, WebCore::URL const&amp;, unsigned char, unsigned int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/html/HTMLDocument.cpp:88</div><div><br/></div><div>     // 通过新创建出来的 document 来创建 DOMWindow</div><div>     document-&gt;createDOMWindow();</div><div>最终调入：</div><div>#0    0x000000010702561c in WebCore::Document::createDOMWindow() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:4060</div><div style="margin-left:80px;">void Document::createDOMWindow()</div><div style="margin-left:80px;">{</div><div style="margin-left:80px;">    ASSERT(m_frame);</div><div style="margin-left:80px;">    ASSERT(!m_domWindow);</div><div style="margin-left:80px;"><br/></div><div style="margin-left:80px;">    m_domWindow = DOMWindow::create(this);</div><div style="margin-left:80px;"><br/></div><div style="margin-left:80px;">    ASSERT(m_domWindow-&gt;document() == this);</div><div style="margin-left:80px;">    ASSERT(m_domWindow-&gt;frame() == m_frame);</div><div style="margin-left:80px;">}</div><div><br/></div><div>     // 为 m_frame 设置document:</div><div>     m_frame-&gt;setDocument(document.copyRef());</div><div>...</div><div><br/></div><div>＝＝＝</div><div>★总结：WebCore::DocumentWriter::begin 函数主要工作：创建新的 Document 对象，并且用其 Document 对象创建 DOMWindow 对象，并且设置 script 运行环境相关，并且设置 document-&gt;setEncoder，最终调用：FrameLoader 的 didBeginDocument 函数。</div><div>在 WebCore::FrameLoader::didBeginDocument(bool) 函数中，设置 document 的状态为：Document::Loading。</div><div>通过 initContentSecurityPolicy 初始化安全策略，通过 HTTPHeaderName::XDNSPrefetchControl 响应头判断 DNP Prefetche 的策略，设置 contentSecurityPolicy 策略；具体处理 CSP 相关的安全策略是在：</div><div>WebCore::ContentSecurityPolicyResponseHeaders::ContentSecurityPolicyResponseHeaders(WebCore::ResourceResponse const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/page/csp/ContentSecurityPolicyResponseHeaders.cpp:51</div><div>这个位置。主要是判断响应头中与 CSP 相关的响应头是不是存在，最后交给：</div><div>#0    0x0000000106d16824 in WebCore::ContentSecurityPolicy::didReceiveHeaders(WebCore::ContentSecurityPolicyResponseHeaders const&amp;, WebCore::ContentSecurityPolicy::ReportParsingErrors) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/page/csp/ContentSecurityPolicy.cpp:143</div><div>来处理。</div><div>从响应头得知页面语言是什么。</div><div>＝＝＝</div><div>★ WebCore::DocumentWriter::begin 中会再调用：</div><div>#0    0x000000010701df84 in WebCore::Document::implicitOpen() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:2588</div><div>此函数来做一下初始化：取消目前的 Parsing 工作、设置兼容模式（setCompatibilityMode(DocumentCompatibilityMode::NoQuirksMode)）、创建 Parser、设置 Document 的 ReadyState 为 Loading（setReadyState(Loading)）。</div><div>＝＝＝</div><div>★ WebCore::DocumentWriter::begin 的最后，设置自身（writer）状态为：StartedWritingState：</div><div>m_state = StartedWritingState;</div><div>＝＝＝</div></div>
+</div><div><br/></div><div><br/></div><div><img src="%E8%B5%84%E6%BA%90%E5%AD%97%E8%8A%82%E6%B5%81%E5%88%B0%20DOM%20%E6%A0%91%E7%9A%84%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B4.resources/475A8CA6-FDC7-4BB4-8F67-B33F75F29CC0.png" height="auto" width="100%"/><br/></div><div><br/></div><div>
+<hr/></div><div><br/></div><div>再回到：WebCore::DocumentLoader::commitData(char const*, unsigned long)：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>★ 调用：</div><div>#0    0x00000001073fc04c in WebCore::FrameLoaderStateMachine::creatingInitialEmptyDocument() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoaderStateMachine.cpp:54</div><div>此位置函数，将 this    const WebCore::FrameLoaderStateMachine *    0x1155dfcd0    0x00000001155dfcd0 自身状态设置为：</div><div>CreatingInitialEmptyDocument</div><div>===</div><div>★ 通过调用：FrameLoader::receivedFirstData 函数，来 dispatch 到 client 各种消息</div><div>＝＝＝</div><div>★ 设置 encoding 变量：</div><div>if (overrideEncoding().isNull()) {</div><div>    userChosen = false;</div><div>    encoding = response().textEncodingName();</div><div>...</div><div>m_writer.setEncoding(encoding, userChosen);</div><div>===</div><div>★ 最后：调入重要函数：</div><div>m_writer.addData(bytes, length);</div></div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

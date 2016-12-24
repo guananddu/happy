@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-23 03:55:22 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-14 09:15:40 +0000"/><title>NodeJS 启动流程3</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-23 03:55:22 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 06:33:17 +0000"/><title>NodeJS 启动流程3</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,412 +11,79 @@
 <h2>NodeJS 启动流程3</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>watchers = uv__realloc(loop-&gt;watchers,</div>
-<div>                         (nwatchers + 2) * sizeof(loop-&gt;watchers[0]));</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>watchers = uv__realloc(loop-&gt;watchers,</div><div>                         (nwatchers + 2) * sizeof(loop-&gt;watchers[0]));</div></div></div>
 <div><br/></div>
 <div>以上代码其实是重新分配了 loop-&gt;watchers 数组的大小。</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>uv__io_t** watchers;</div>
-<div><br/></div>
-<div>
-<div>typedef struct uv__io_s uv__io_t;</div>
-<div><br/></div>
-<div>struct uv__io_s {</div>
-<div>  uv__io_cb cb;</div>
-<div>  void* pending_queue[2];</div>
-<div>  void* watcher_queue[2];</div>
-<div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div>
-<div>  unsigned int events;  /* Current event mask. */</div>
-<div>  int fd;</div>
-<div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div>
-<div>};</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>uv__io_t** watchers;</div><div><br/></div><div><div>typedef struct uv__io_s uv__io_t;</div><div><br/></div><div>struct uv__io_s {</div><div>  uv__io_cb cb;</div><div>  void* pending_queue[2];</div><div>  void* watcher_queue[2];</div><div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div><div>  unsigned int events;  /* Current event mask. */</div><div>  int fd;</div><div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div><div>};</div></div></div>
 <div><br/></div>
 <div>maybe_resize 函数执行完毕，信息截图：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/6F19A8DD-F186-4A9B-BB89-C775F14A0A84.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/6F19A8DD-F186-4A9B-BB89-C775F14A0A84.png" height="auto" width="100%"/><br/></div>
 <div><br/></div>
 <div>但是，一曲终了，这个 maybe_resize 的作用是什么呢？？从最后两行可以推算，只是再次确认：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>  loop-&gt;watchers = watchers;</div>
-<div>  loop-&gt;nwatchers = nwatchers;</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>  loop-&gt;watchers = watchers;</div><div>  loop-&gt;nwatchers = nwatchers;</div></div></div>
 <div><br/></div>
-<div>loop-&gt;watcher 和 loop-&gt;nwatchers 这两个字段。</div>
+<div>loop-&gt;watcher 和 loop-&gt;nwatchers 这两个字段。</div><div><br/></div>
 <hr/>
-<div>继续：</div>
+<div><br/></div><div>继续：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000101018d41 in uv__io_start at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:858</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000101018d41 in uv__io_start at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/core.c:858</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>#define QUEUE_EMPTY(q)                                                        \</div>
-</div>
-<div>  ((const QUEUE *) (q) == (const QUEUE *) QUEUE_NEXT(q))</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#define QUEUE_EMPTY(q)                                                        \</div><div>  ((const QUEUE *) (q) == (const QUEUE *) QUEUE_NEXT(q))</div><div><br/></div><div><div>#define QUEUE_INSERT_TAIL(h, q)                                               \</div><div>  do {                                                                        \</div><div>    QUEUE_NEXT(q) = (h);                                                      \</div><div>    QUEUE_PREV(q) = QUEUE_PREV(h);                                            \</div><div>    QUEUE_PREV_NEXT(q) = (q);                                                 \</div><div>    QUEUE_PREV(h) = (q);                                                      \</div><div>  }                                                                           \</div><div>  while (0)</div></div><div><br/></div><div>...</div><div>  // 调用:uv__io_start(loop, &amp;loop-&gt;signal_io_watcher, POLLIN);  </div><div><br/></div><div>  // 初次确实为空</div><div>  // loop    uv_loop_t *    0x101b0bf40    0x0000000101b0bf40</div><div>  // watcher_queue    void *[2]  </div><div>  // [0]    void *    0x101b0bf98    0x0000000101b0bf98</div><div>  // [1]    void *    0x101b0bf98    0x0000000101b0bf98 </div><div>  if (QUEUE_EMPTY(&amp;w-&gt;watcher_queue))</div><div>    // 把 loop-&gt;signal_io_watcher 节点 插入 loop 的 watcher_queue 双向队列</div><div>    QUEUE_INSERT_TAIL(&amp;loop-&gt;watcher_queue, &amp;w-&gt;watcher_queue);</div><div>  // 同时根据 w-&gt;fd 为索引，将节点存入 loop-&gt;watchers 数组</div><div>  if (loop-&gt;watchers[w-&gt;fd] == NULL) {</div><div>    loop-&gt;watchers[w-&gt;fd] = w;</div><div>    // 自加</div><div>    loop-&gt;nfds++;</div><div>  }</div><div>}</div></div>
 <div><br/></div>
-<div>
-<div>#define QUEUE_INSERT_TAIL(h, q)                                               \</div>
-<div>  do {                                                                        \</div>
-<div>    QUEUE_NEXT(q) = (h);                                                      \</div>
-<div>    QUEUE_PREV(q) = QUEUE_PREV(h);                                            \</div>
-<div>    QUEUE_PREV_NEXT(q) = (q);                                                 \</div>
-<div>    QUEUE_PREV(h) = (q);                                                      \</div>
-<div>  }                                                                           \</div>
-<div>  while (0)</div>
-</div>
+<div>运行完毕后：</div><div><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/53E7AD78-D092-47BB-BC37-E8FD0F64E391.png" height="auto" width="100%"/><br/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/33EEDAC2-D93D-4DC6-B110-2A30670F6F8D.png" height="auto" width="100%"/><br/></div>
 <div><br/></div>
-<div>...</div>
-<div>  // 调用:uv__io_start(loop, &amp;loop-&gt;signal_io_watcher, POLLIN);  </div>
-<div><br/></div>
-<div>  // 初次确实为空</div>
-<div>  // loop    uv_loop_t *    0x101b0bf40    0x0000000101b0bf40</div>
-<div>  // watcher_queue    void *[2]  </div>
-<div>  // [0]    void *    0x101b0bf98    0x0000000101b0bf98</div>
-<div>  // [1]    void *    0x101b0bf98    0x0000000101b0bf98 </div>
-<div>  if (QUEUE_EMPTY(&amp;w-&gt;watcher_queue))</div>
-<div>    // 把 loop-&gt;signal_io_watcher 节点 插入 loop 的 watcher_queue 双向队列</div>
-<div>    QUEUE_INSERT_TAIL(&amp;loop-&gt;watcher_queue, &amp;w-&gt;watcher_queue);</div>
-<div>  // 同时根据 w-&gt;fd 为索引，将节点存入 loop-&gt;watchers 数组</div>
-<div>
-<div>  if (loop-&gt;watchers[w-&gt;fd] == NULL) {</div>
-</div>
-<div>    loop-&gt;watchers[w-&gt;fd] = w;</div>
-<div>    // 自加</div>
-<div>
-<div>    loop-&gt;nfds++;</div>
-</div>
-<div>  }</div>
-<div>}</div>
-</div>
-<div><br/></div>
-<div>运行完毕后：</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/53E7AD78-D092-47BB-BC37-E8FD0F64E391.png" height="auto" width="100%"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B3.resources/33EEDAC2-D93D-4DC6-B110-2A30670F6F8D.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div>uv_signal_loop_once_init 函数的作用：</div>
+<div>uv_signal_loop_once_init 函数的作用：</div><div><br/></div>
 <div>在 loop-&gt;signal_pipefd 中创建读写管道，初始化 loop-&gt;signal_io_watcher 并且挂载其回调函数，存储管道的读入描述符；最后初始化 loop 的 watcher_queue 双向链表队列，将 loop-&gt;signal_io_watcher 追加入 loop 的 watcher_queue 双向链表； 更新 loop-&gt;watchers 数组，以管道读入描述符为数组索引存储 watcher，最后增加 loop-&gt;nfds 计数。</div>
 <div><br/></div>
 <hr/>
-<div>再次回溯至：</div>
+<div><br/></div><div>再次回溯至：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000101023d21 in uv_signal_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/signal.c:266</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000101023d21 in uv_signal_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/signal.c:266</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>#if defined(_WIN32)</div>
-<div># define uv__handle_platform_init(h) ((h)-&gt;u.fd = -1)</div>
-<div>#else</div>
-<div># define uv__handle_platform_init(h) ((h)-&gt;next_closing = NULL)</div>
-<div>#endif</div>
-</div>
-<div><br/></div>
-<div>#define uv__handle_init(loop_, h, type_)                                      \</div>
-<div>
-<div>  do {                                                                        \</div>
-<div>    (h)-&gt;loop = (loop_);                                                      \</div>
-<div>    (h)-&gt;type = (type_);                                                      \</div>
-<div>    (h)-&gt;flags = UV__HANDLE_REF;  /* Ref the loop when active. */            \</div>
-<div>    QUEUE_INSERT_TAIL(&amp;(loop_)-&gt;handle_queue, &amp;(h)-&gt;handle_queue);            \</div>
-<div>    uv__handle_platform_init(h);                                              \</div>
-<div>  }                                                                           \</div>
-</div>
-<div>  while (0)</div>
-<div>  </div>
-<div>  // 类型说明：</div>
-<div>  // uv_signal_t child_watcher; </div>
-<div>  // typedef struct uv_signal_s uv_signal_t;</div>
-<div>  // typedef struct uv_handle_s uv_handle_t;</div>
-<div>
-<div>  /* The abstract base class of all handles. */</div>
-<div>  struct uv_handle_s {</div>
-<div>    UV_HANDLE_FIELDS</div>
-</div>
-<div>  };</div>
-<div><br/></div>
-<div>
-<div>   #define UV_HANDLE_FIELDS                                                      \</div>
-<div>    /* public */                                                                \</div>
-<div>    void* data;                                                                 \</div>
-<div>    /* read-only */                                                            \</div>
-<div>    uv_loop_t* loop;                                                            \</div>
-<div>    uv_handle_type type;                                                        \</div>
-<div>    /* private */                                                              \</div>
-<div>    uv_close_cb close_cb;                                                       \</div>
-<div>    void* handle_queue[2];                                                      \</div>
-<div>    union {                                                                     \</div>
-<div>      int fd;                                                                   \</div>
-<div>      void* reserved[4];                                                        \</div>
-<div>    } u;                                                                        \</div>
-</div>
-<div>    UV_HANDLE_PRIVATE_FIELDS                                                    \</div>
-<div><br/></div>
-<div>  // uv_signal_s 继承了 UV_HANDLE_FIELDS 字段</div>
-<div>  struct uv_signal_s {</div>
-<div>    UV_HANDLE_FIELDS</div>
-<div>    uv_signal_cb signal_cb;</div>
-<div>    int signum;</div>
-<div>    UV_SIGNAL_PRIVATE_FIELDS</div>
-<div>  };</div>
-<div>  // 这样调用：</div>
-<div>  uv_signal_init(loop, &amp;loop-&gt;child_watcher); </div>
-<div><br/></div>
-<div>  // uv_signal_init 之中：</div>
-<div>  // handle 的初始化</div>
-<div>  // 设置 handle-&gt;loop 指向 loop</div>
-<div>  // handle-&gt;type = SIGNAL</div>
-<div>  // 将 loop-&gt;child_watcher （作为 handle 类型）追加入 loop 的 loop-&gt;handle_queue 双向链表</div>
-<div>  uv__handle_init(loop, (uv_handle_t*) handle, UV_SIGNAL);</div>
-<div>
-<div>  handle-&gt;signum = 0;</div>
-<div>  handle-&gt;caught_signals = 0;</div>
-</div>
-<div>  handle-&gt;dispatched_signals = 0;</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>#if defined(_WIN32)</div><div># define uv__handle_platform_init(h) ((h)-&gt;u.fd = -1)</div><div>#else</div><div># define uv__handle_platform_init(h) ((h)-&gt;next_closing = NULL)</div><div>#endif</div></div><div><br/></div><div>#define uv__handle_init(loop_, h, type_)                                      \</div><div><div>  do {                                                                        \</div><div>    (h)-&gt;loop = (loop_);                                                      \</div><div>    (h)-&gt;type = (type_);                                                      \</div><div>    (h)-&gt;flags = UV__HANDLE_REF;  /* Ref the loop when active. */            \</div><div>    QUEUE_INSERT_TAIL(&amp;(loop_)-&gt;handle_queue, &amp;(h)-&gt;handle_queue);            \</div><div>    uv__handle_platform_init(h);                                              \</div><div>  }                                                                           \</div></div><div>  while (0)</div><div>  </div><div>  // 类型说明：</div><div>  // uv_signal_t child_watcher; </div><div>  // typedef struct uv_signal_s uv_signal_t;</div><div>  // typedef struct uv_handle_s uv_handle_t;</div><div><div>  /* The abstract base class of all handles. */</div><div>  struct uv_handle_s {</div><div>    UV_HANDLE_FIELDS</div></div><div>  };</div><div><br/></div><div><div>   #define UV_HANDLE_FIELDS                                                      \</div><div>    /* public */                                                                \</div><div>    void* data;                                                                 \</div><div>    /* read-only */                                                            \</div><div>    uv_loop_t* loop;                                                            \</div><div>    uv_handle_type type;                                                        \</div><div>    /* private */                                                              \</div><div>    uv_close_cb close_cb;                                                       \</div><div>    void* handle_queue[2];                                                      \</div><div>    union {                                                                     \</div><div>      int fd;                                                                   \</div><div>      void* reserved[4];                                                        \</div><div>    } u;                                                                        \</div></div><div>    UV_HANDLE_PRIVATE_FIELDS                                                    \</div><div><br/></div><div>  // uv_signal_s 继承了 UV_HANDLE_FIELDS 字段</div><div>  struct uv_signal_s {</div><div>    UV_HANDLE_FIELDS</div><div>    uv_signal_cb signal_cb;</div><div>    int signum;</div><div>    UV_SIGNAL_PRIVATE_FIELDS</div><div>  };</div><div>  // 这样调用：</div><div>  uv_signal_init(loop, &amp;loop-&gt;child_watcher); </div><div><br/></div><div>  // uv_signal_init 之中：</div><div>  // handle 的初始化</div><div>  // 设置 handle-&gt;loop 指向 loop</div><div>  // handle-&gt;type = SIGNAL</div><div>  // 将 loop-&gt;child_watcher （作为 handle 类型）追加入 loop 的 loop-&gt;handle_queue 双向链表</div><div>  uv__handle_init(loop, (uv_handle_t*) handle, UV_SIGNAL);</div><div><div>  handle-&gt;signum = 0;</div><div>  handle-&gt;caught_signals = 0;</div></div><div>  handle-&gt;dispatched_signals = 0;</div></div>
 <div><br/></div>
 <div>总结就是，初始化 loop-&gt;child_watcher （作为 handle 类型），并追加入 loop 的 loop-&gt;handle_queue 双向链表。</div>
 <div><br/></div>
 <div>
 <hr/></div>
-<div>loop 的读写锁初始化：</div>
+<div><br/></div><div>loop 的读写锁初始化：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>...</div>
-<div>  err = uv_rwlock_init(&amp;loop-&gt;cloexec_lock);</div>
-<div>
-<div>  if (err)</div>
-</div>
-<div>    goto fail_rwlock_init;</div>
-<div>...</div>
-<div>--</div>
-<div>uv_rwlock_t cloexec_lock;</div>
-<div>typedef pthread_rwlock_t uv_rwlock_t;</div>
-<div>--</div>
-<div>
-<div>int uv_rwlock_init(uv_rwlock_t* rwlock) {</div>
-<div>  return -pthread_rwlock_init(rwlock, NULL);</div>
-<div>}</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>...</div><div>  err = uv_rwlock_init(&amp;loop-&gt;cloexec_lock);</div><div>  if (err)</div><div>    goto fail_rwlock_init;</div><div>...</div><div>--</div><div>uv_rwlock_t cloexec_lock;</div><div>typedef pthread_rwlock_t uv_rwlock_t;</div><div>--</div><div><div>int uv_rwlock_init(uv_rwlock_t* rwlock) {</div><div>  return -pthread_rwlock_init(rwlock, NULL);</div><div>}</div></div></div>
 <div><br/></div>
 <div>关于读写锁，请在笔记中搜索“读写锁”；再往下，初始化互斥锁，不再深究，请在笔记中搜索“互斥锁”。</div>
 <div><br/></div>
 <div>
 <hr/></div>
-<div>重点来看：uv_async_init 函数：</div>
+<div><br/></div><div>重点来看：uv_async_init 函数：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>uv_async_t wq_async;</div>
-<div>typedef struct uv_async_s uv_async_t;</div>
-<div><br/></div>
-<div>
-<div>struct uv_async_s {</div>
-<div>  UV_HANDLE_FIELDS</div>
-<div>  UV_ASYNC_PRIVATE_FIELDS</div>
-</div>
-<div>};</div>
-<div><br/></div>
-<div>
-<div>typedef void (*uv_async_cb)(uv_async_t* handle);</div>
-</div>
-<div><br/></div>
-<div>
-<div>#define UV_ASYNC_PRIVATE_FIELDS                                               \</div>
-<div>  uv_async_cb async_cb;                                                       \</div>
-<div>  void* queue[2];                                                             \</div>
-</div>
-<div>  int pending;                                                                \</div>
-<div>---</div>
-<div>...</div>
-<div>  // loop-&gt;wq_async 是 handler；uv__work_done 是异步回调函数</div>
-<div>  err = uv_async_init(loop, &amp;loop-&gt;wq_async, uv__work_done);</div>
-<div>
-<div>  if (err)</div>
-</div>
-<div>    goto fail_async_init;</div>
-<div>...</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>uv_async_t wq_async;</div><div>typedef struct uv_async_s uv_async_t;</div><div><br/></div><div><div>struct uv_async_s {</div><div>  UV_HANDLE_FIELDS</div><div>  UV_ASYNC_PRIVATE_FIELDS</div></div><div>};</div><div><br/></div><div>typedef void (*uv_async_cb)(uv_async_t* handle);</div><div><br/></div><div><div>#define UV_ASYNC_PRIVATE_FIELDS                                               \</div><div>  uv_async_cb async_cb;                                                       \</div><div>  void* queue[2];                                                             \</div></div><div>  int pending;                                                                \</div><div>---</div><div>...</div><div>  // loop-&gt;wq_async 是 handler；uv__work_done 是异步回调函数</div><div>  err = uv_async_init(loop, &amp;loop-&gt;wq_async, uv__work_done);</div><div>  if (err)</div><div>    goto fail_async_init;</div><div>...</div></div>
 <div><br/></div>
 <div>进入函数来看：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000101016d9b in uv_async_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/async.c:45</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000101016d9b in uv_async_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/async.c:45</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>int uv_async_init(uv_loop_t* loop, uv_async_t* handle, uv_async_cb async_cb) {</div>
-</div>
-<div>  int err;</div>
-<div>  // 重点关注</div>
-<div>
-<div>  err = uv__async_start(loop, &amp;loop-&gt;async_watcher, uv__async_event);</div>
-<div>  if (err)</div>
-</div>
-<div>    return err;</div>
-<div>  </div>
-<div>  // handle-&gt;loop = loop;</div>
-<div>  // handle-&gt;type = UV_ASYNC;</div>
-<div>  // 把此 handle 也追加入 loop-&gt;handle_queue 双向链表中去【通用的 handle 类型 handle_queue 字段】</div>
-<div>  uv__handle_init(loop, (uv_handle_t*)handle, UV_ASYNC);</div>
-<div>  // 设置 handle 的回调</div>
-<div>
-<div>  handle-&gt;async_cb = async_cb;</div>
-</div>
-<div>  handle-&gt;pending = 0;</div>
-<div>  // 将此 handle 追加入 loop-&gt;async_handles 双向链表（通过 handle-&gt;queue 字段）</div>
-<div>
-<div>  QUEUE_INSERT_TAIL(&amp;loop-&gt;async_handles, &amp;handle-&gt;queue);</div>
-</div>
-<div>  uv__handle_start(handle);</div>
-<div>  // active_handles    unsigned int    1</div>
-<div>
-<div>  return 0;</div>
-</div>
-<div>}</div>
-<div>---</div>
-<div>//宏：</div>
-<div>
-<div>#define uv__handle_start(h)                                                   \</div>
-<div>  do {                                                                        \</div>
-<div>    assert(((h)-&gt;flags &amp; UV__HANDLE_CLOSING) == 0);                           \</div>
-<div>    if (((h)-&gt;flags &amp; UV__HANDLE_ACTIVE) != 0) break;                         \</div>
-<div>    (h)-&gt;flags |= UV__HANDLE_ACTIVE;                                          \</div>
-<div>    if (((h)-&gt;flags &amp; UV__HANDLE_REF) != 0) uv__active_handle_add(h);         \</div>
-<div>  }                                                                           \</div>
-</div>
-<div>  while (0)</div>
-<div>---</div>
-<div>
-<div>#define uv__active_handle_add(h)                                              \</div>
-<div>  do {                                                                        \</div>
-<div>    (h)-&gt;loop-&gt;active_handles++;                                              \</div>
-<div>  }                                                                           \</div>
-<div>  while (0)</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>int uv_async_init(uv_loop_t* loop, uv_async_t* handle, uv_async_cb async_cb) {</div><div>  int err;</div><div>  // 重点关注</div><div><div>  err = uv__async_start(loop, &amp;loop-&gt;async_watcher, uv__async_event);</div><div>  if (err)</div></div><div>    return err;</div><div>  </div><div>  // handle-&gt;loop = loop;</div><div>  // handle-&gt;type = UV_ASYNC;</div><div>  // 把此 handle 也追加入 loop-&gt;handle_queue 双向链表中去【通用的 handle 类型 handle_queue 字段】</div><div>  uv__handle_init(loop, (uv_handle_t*)handle, UV_ASYNC);</div><div>  // 设置 handle 的回调</div><div>  handle-&gt;async_cb = async_cb;</div><div>  handle-&gt;pending = 0;</div><div>  // 将此 handle 追加入 loop-&gt;async_handles 双向链表（通过 handle-&gt;queue 字段）</div><div>  QUEUE_INSERT_TAIL(&amp;loop-&gt;async_handles, &amp;handle-&gt;queue);</div><div>  uv__handle_start(handle);</div><div>  // active_handles    unsigned int    1</div><div>  return 0;</div><div>}</div><div>---</div><div>//宏：</div><div><div>#define uv__handle_start(h)                                                   \</div><div>  do {                                                                        \</div><div>    assert(((h)-&gt;flags &amp; UV__HANDLE_CLOSING) == 0);                           \</div><div>    if (((h)-&gt;flags &amp; UV__HANDLE_ACTIVE) != 0) break;                         \</div><div>    (h)-&gt;flags |= UV__HANDLE_ACTIVE;                                          \</div><div>    if (((h)-&gt;flags &amp; UV__HANDLE_REF) != 0) uv__active_handle_add(h);         \</div><div>  }                                                                           \</div></div><div>  while (0)</div><div>---</div><div><div>#define uv__active_handle_add(h)                                              \</div><div>  do {                                                                        \</div><div>    (h)-&gt;loop-&gt;active_handles++;                                              \</div><div>  }                                                                           \</div><div>  while (0)</div></div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>struct uv__async async_watcher;</div>
-<div><br/></div>
-<div>
-<div>struct uv__async {</div>
-<div>  uv__async_cb cb;</div>
-<div>  uv__io_t io_watcher;</div>
-<div>  int wfd;</div>
-</div>
-<div>};</div>
-<div><br/></div>
-<div>
-<div>typedef void (*uv__io_cb)(struct uv_loop_s* loop,</div>
-<div>                          struct uv__io_s* w,</div>
-</div>
-<div>                          unsigned int events);</div>
-<div><br/></div>
-<div>
-<div>typedef struct uv__io_s uv__io_t;</div>
-<div><br/></div>
-<div>struct uv__io_s {</div>
-<div>  uv__io_cb cb;</div>
-<div>  void* pending_queue[2];</div>
-<div>  void* watcher_queue[2];</div>
-<div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div>
-<div>  unsigned int events;  /* Current event mask. */</div>
-<div>  int fd;</div>
-<div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div>
-<div>};</div>
-</div>
-<div><br/></div>
-<div>
-<div>typedef void (*uv__async_cb)(struct uv_loop_s* loop,</div>
-<div>                             struct uv__async* w,</div>
-</div>
-<div>                             unsigned int nevents);</div>
-<div><br/></div>
-<div>---</div>
-<div>...</div>
-<div>err = uv__async_start(loop, &amp;loop-&gt;async_watcher, uv__async_event);</div>
-<div>...</div>
-<div>---</div>
-<div>// 函数体：</div>
-<div>
-<div>int uv__async_start(uv_loop_t* loop, struct uv__async* wa, uv__async_cb cb) {</div>
-<div>  int pipefd[2];</div>
-</div>
-<div>  int err;</div>
-<div>  ...</div>
-<div>  // 创建管道描述符：pipefd</div>
-<div>  ...</div>
-<div>  // 调用 init</div>
-<div>  // 初始化 loop-&gt;async_watcher-&gt;io_watcher 的 pending_queue、watcher_queue 双向链表</div>
-<div>  // 设置 wa-&gt;io_watcher-&gt;cb = uv__async_io</div>
-<div>  // 设置 wa-&gt;io_watcher-&gt;fd = pipefd[0] （管道读入端）</div>
-<div>  // 等等...</div>
-<div>  uv__io_init(&amp;wa-&gt;io_watcher, uv__async_io, pipefd[0]);</div>
-<div>  // 将此 wa-&gt;io_watcher 追加入 loop-&gt;watcher_queue 双向链表</div>
-<div>  // 再将此 watcher 通过 pipefd[0] 为索引，放入 loop-&gt;watchers 数组</div>
-<div>  // loop-&gt;nfds++</div>
-<div>  uv__io_start(loop, &amp;wa-&gt;io_watcher, POLLIN);</div>
-<div>  // 最后，设置 loop-&gt;async_watcher-&gt;wfd 值为管道写入端的描述符</div>
-<div>  wa-&gt;wfd = pipefd[1];</div>
-<div>  // 设置 loop-&gt;async_watcher-&gt;cb = uv__async_event【函数】</div>
-<div>  wa-&gt;cb = cb;</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>struct uv__async async_watcher;</div><div><br/></div><div><div>struct uv__async {</div><div>  uv__async_cb cb;</div><div>  uv__io_t io_watcher;</div><div>  int wfd;</div></div><div>};</div><div><br/></div><div><div>typedef void (*uv__io_cb)(struct uv_loop_s* loop,</div><div>                          struct uv__io_s* w,</div></div><div>                          unsigned int events);</div><div><br/></div><div><div>typedef struct uv__io_s uv__io_t;</div><div><br/></div><div>struct uv__io_s {</div><div>  uv__io_cb cb;</div><div>  void* pending_queue[2];</div><div>  void* watcher_queue[2];</div><div>  unsigned int pevents; /* Pending event mask i.e. mask at next tick. */</div><div>  unsigned int events;  /* Current event mask. */</div><div>  int fd;</div><div>  UV_IO_PRIVATE_PLATFORM_FIELDS</div><div>};</div></div><div><br/></div><div><div>typedef void (*uv__async_cb)(struct uv_loop_s* loop,</div><div>                             struct uv__async* w,</div></div><div>                             unsigned int nevents);</div><div><br/></div><div>---</div><div>...</div><div>err = uv__async_start(loop, &amp;loop-&gt;async_watcher, uv__async_event);</div><div>...</div><div>---</div><div>// 函数体：</div><div><div>int uv__async_start(uv_loop_t* loop, struct uv__async* wa, uv__async_cb cb) {</div><div>  int pipefd[2];</div></div><div>  int err;</div><div>  ...</div><div>  // 创建管道描述符：pipefd</div><div>  ...</div><div>  // 调用 init</div><div>  // 初始化 loop-&gt;async_watcher-&gt;io_watcher 的 pending_queue、watcher_queue 双向链表</div><div>  // 设置 wa-&gt;io_watcher-&gt;cb = uv__async_io</div><div>  // 设置 wa-&gt;io_watcher-&gt;fd = pipefd[0] （管道读入端）</div><div>  // 等等...</div><div>  uv__io_init(&amp;wa-&gt;io_watcher, uv__async_io, pipefd[0]);</div><div>  // 将此 wa-&gt;io_watcher 追加入 loop-&gt;watcher_queue 双向链表</div><div>  // 再将此 watcher 通过 pipefd[0] 为索引，放入 loop-&gt;watchers 数组</div><div>  // loop-&gt;nfds++</div><div>  uv__io_start(loop, &amp;wa-&gt;io_watcher, POLLIN);</div><div>  // 最后，设置 loop-&gt;async_watcher-&gt;wfd 值为管道写入端的描述符</div><div>  wa-&gt;wfd = pipefd[1];</div><div>  // 设置 loop-&gt;async_watcher-&gt;cb = uv__async_event【函数】</div><div>  wa-&gt;cb = cb;</div></div>
 <div><br/></div>
 <div>
 <hr/></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000101020178 in uv_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/loop.c:104</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000101020178 in uv_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/loop.c:104</div></div>
 <div><br/></div>
-</div>
-<div>待此函数执行完毕后：active_handles  unsigned int    0</div>
-<div><br/></div>
-<div>至此，算是执行完毕了 uv_loop_init 函数。</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div><br/></div>
-<div>最终回溯至：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>uv_loop_t* uv_default_loop(void) {</div>
-<div>  if (default_loop_ptr != NULL)</div>
-<div>    return default_loop_ptr;</div>
-<div><br/></div>
-<div>  if (uv_loop_init(&amp;default_loop_struct))</div>
-</div>
-<div>    return NULL;</div>
-<div>  // default_loop_ptr 初始化完毕</div>
-<div>
-<div>  default_loop_ptr = &amp;default_loop_struct;</div>
-<div>  return default_loop_ptr;</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-
+</div><div>待此函数执行完毕后：active_handles  unsigned int    0</div><div><br/></div><div>至此，算是执行完毕了 uv_loop_init 函数。</div><div><br/></div><div>
+<hr/></div><div><br/></div><div>最终回溯至：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>uv_loop_t* uv_default_loop(void) {</div><div>  if (default_loop_ptr != NULL)</div><div>    return default_loop_ptr;</div><div><br/></div><div>  if (uv_loop_init(&amp;default_loop_struct))</div></div><div>    return NULL;</div><div>  // default_loop_ptr 初始化完毕</div><div><div>  default_loop_ptr = &amp;default_loop_struct;</div><div>  return default_loop_ptr;</div><div>}</div></div></div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

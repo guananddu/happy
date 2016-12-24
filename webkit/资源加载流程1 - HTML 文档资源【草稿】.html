@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-09 09:18:54 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-12 03:50:22 +0000"/><title>资源加载流程1 - HTML 文档资源【草稿】</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-09 09:18:54 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:11:51 +0000"/><title>资源加载流程1 - HTML 文档资源【草稿】</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,48 +11,12 @@
 <h2>资源加载流程1 - HTML 文档资源【草稿】</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>基础知识学习（ Objective-C 代码语法 ）：</div>
-<div><a href="http://www.runoob.com/w3cnote/objective-c-tutorial.html">http://www.runoob.com/w3cnote/objective-c-tutorial.html</a></div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div><br/></div>
-<div>入手点见下方代码，作为平台相关，在 Mac 平台下编译，所以代码为 Objective-C 的实现。编译过了 MiniBrowser，其函数启动点为：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#26    0x0000000100006c02 in main at /Users/mrguan/work/svn/Webkit/WebKit/Tools/MiniBrowser/mac/main.m:30</div>
-</div>
-<div><br/></div>
-<div>实现代码为：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>int main(int argc, char *argv[])</div>
-<div>{</div>
-<div>    return NSApplicationMain(argc,  (const char **) argv);</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>上述启动代码进入以后，我理解 MiniBrowser 的 App 就已经处于运行状态了，但是待输入一个指定 URL 后，将会具体切入发起请求的函数：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>#0    0x0000000108f2bb83 in -[WebCoreResourceHandleAsDelegate connection:willSendRequest:redirectResponse:] at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/mac/WebCoreResourceHandleAsDelegate.mm:64</div>
-</div>
-</div>
-<div><br/></div>
-<div>可以画一下 WebCoreResourceHandleAsDelegate 类的具体构成：</div>
-<div><br/></div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90%E3%80%90%E8%8D%89%E7%A8%BF%E3%80%91.resources/797A9B60-8201-4053-88C1-97FDC4840DBC.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div><br/></div>
-
+<hr class="title-hr"><div>基础知识学习（ Objective-C 代码语法 ）：</div><div><br/></div><div><a href="http://www.runoob.com/w3cnote/objective-c-tutorial.html">http://www.runoob.com/w3cnote/objective-c-tutorial.html</a></div><div><br/></div><div>
+<hr/></div><div><br/></div><div>入手点见下方代码，作为平台相关，在 Mac 平台下编译，所以代码为 Objective-C 的实现。编译过了 MiniBrowser，其函数启动点为：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#26    0x0000000100006c02 in main at /Users/mrguan/work/svn/Webkit/WebKit/Tools/MiniBrowser/mac/main.m:30</div></div><div><br/></div><div>实现代码为：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>int main(int argc, char *argv[])</div><div>{</div><div>    return NSApplicationMain(argc,  (const char **) argv);</div><div>}</div></div></div><div><br/></div><div>上述启动代码进入以后，我理解 MiniBrowser 的 App 就已经处于运行状态了，但是待输入一个指定 URL 后，将会具体切入发起请求的函数：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000108f2bb83 in -[WebCoreResourceHandleAsDelegate connection:willSendRequest:redirectResponse:] at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/mac/WebCoreResourceHandleAsDelegate.mm:64</div></div><div><br/></div><div>可以画一下 WebCoreResourceHandleAsDelegate 类的具体构成：</div><div><br/></div><div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90%E3%80%90%E8%8D%89%E7%A8%BF%E3%80%91.resources/797A9B60-8201-4053-88C1-97FDC4840DBC.png" height="auto" width="100%"/><br/></div><div><br/></div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-09 08:13:49 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-16 08:40:30 +0000"/><title>【计划】</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-09 08:13:49 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:09:45 +0000"/><title>【计划】</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -23,12 +23,12 @@
 <li><input type="checkbox"/>stream 模块深究</li>
 <li><input type="checkbox"/>http 模块深究<br/></li><li><input type="checkbox"/>https 模块深究<br/></li><li><input type="checkbox"/>child process 模块深究<br/></li><li><input type="checkbox"/>cluster 模块深究<br/></li>
 <li><input type="checkbox"/>v8 Function 的执行原理</li>
-</ol><div><br/></div><div><br/></div><div><br/></div><div>
-<hr/></div><div>【有关native模块中js代码的调试】</div><div><br/></div><div>同样是使用 node-inspector 工具，但是因为目前node的c/c++模块主要调试大版本为：v6.6.0，而大于v6.4.0版本的node对node-inspector并不兼容，所以，native js代码的调试采用分离式调试：</div><div><br/></div><div>调试入口文件仍旧是： <span style="font: 14.0px 'Meslo LG M DZ for Powerline'; font-variant-ligatures: no-common-ligatures; color: #fff0a5; background-color: #13773d">/Users/mrguan/work/git/happy/test-nodejs/main.js</span></div><div>但是native js代码调试在：</div><div><span style="font-style: normal; font-variant-caps: normal; font-weight: normal; font-variant-ligatures: no-common-ligatures; background-color: rgb(19, 119, 61);"><span style="color: rgb(255, 240, 165);"><span style="font-size: 14px;"><span style="font-family: 'Meslo LG M DZ for Powerline';">/Users/mrguan/work/build/node/bin/node-v6.3.1-darwin-x64/bin/node</span></span></span></span></div><div>中：</div><div>./bin/node debug ~/work/git/happy/test-nodejs/main.js</div><div>为启动调试方法。</div><div><br/></div><div>同时别忘记启动：node-inspector &amp;</div><div><br/></div><div>而c/c++代码仍旧采用编译好的v6.6.0版本源代码</div><div><br/></div>
+</ol><div><br/></div><div>Working on: 【buffer 模块深究】</div><div><br/></div><div>
+<hr/></div><div><br/></div><div>node.js version: v6.6.0</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

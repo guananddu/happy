@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-20 07:47:06 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-22 03:19:40 +0000"/><title>NodeJS 启动流程1</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-20 07:47:06 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 06:27:05 +0000"/><title>NodeJS 启动流程1</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,365 +11,91 @@
 <h2>NodeJS 启动流程1</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
-<div>NodeJs 鉴于其 单线程 的特点，启动流程比较简易：</div>
+<hr class="title-hr"><div>
+<div>NodeJs 鉴于其 主线程为单线程 的特点，启动流程比较简易：</div>
 <div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/6A2C4E0B-B78F-47B5-A44A-0842817C96A8.png" height="auto" width="100%"/></div>
+<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/6A2C4E0B-B78F-47B5-A44A-0842817C96A8.png" height="auto" width="100%"/><br/></div>
 <div><br/></div>
 <div>首先进入 main 函数：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#1    0x000000010006a61e in main at /Users/mrguan/work/build/node/node-6.6.0/src/node_main.cc:57</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#1    0x000000010006a61e in main at /Users/mrguan/work/build/node/node-6.6.0/src/node_main.cc:57</div></div>
 <div><br/></div>
 <div>我们只关注 UNIX 平台下的实现：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>// UNIX</div>
-<div>int main(int argc, char *argv[]) {</div>
-<div>  // Disable stdio buffering, it interacts poorly with printf()</div>
-<div>  // calls elsewhere in the program (e.g., any logging from V8.)</div>
-<div>  setvbuf(stdout, nullptr, _IONBF, 0);</div>
-</div>
-<div>  setvbuf(stderr, nullptr, _IONBF, 0);</div>
-<div>  // argc    int    2</div>
-<div>  // 构建在此 Xcode 的默认目录下</div>
-<div>  // *argv    char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x00007fff5fbff988</div>
-<div>  // 进入 node::Start</div>
-<div>
-<div>  return node::Start(argc, argv);</div>
-<div>}</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>// UNIX</div><div>int main(int argc, char *argv[]) {</div><div>  // Disable stdio buffering, it interacts poorly with printf()</div><div>  // calls elsewhere in the program (e.g., any logging from V8.)</div><div>  setvbuf(stdout, nullptr, _IONBF, 0);</div></div><div>  setvbuf(stderr, nullptr, _IONBF, 0);</div><div>  // argc    int    2</div><div>  // 构建在此 Xcode 的默认目录下</div><div>  // *argv    char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x00007fff5fbff988</div><div>  // 进入 node::Start</div><div><div>  return node::Start(argc, argv);</div><div>}</div></div></div>
 <div><br/></div>
 <div>有关 C 函数 setvbuf 的细节说明：Changes the the buffering mode of the given file stream stream as indicated by the argument mode。参数说明：</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5305B1D8-F1CB-42AB-8613-77FC7FD5EAC2.png" height="auto" width="100%"/></div>
+<div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5305B1D8-F1CB-42AB-8613-77FC7FD5EAC2.png" height="auto" width="100%"/><br/></div>
 <div><br/></div>
 <hr/>
-<div>进入 node::Start:</div>
+<div><br/></div><div>进入 node::Start:</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010002c7b2 in node::Start(int, char**) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4641</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010002c7b2 in node::Start(int, char**) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4641</div></div>
 <div><br/></div>
 <div>首先进入 平台初始化 环节：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010002c8e4 in node::PlatformInit() at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4192</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010002c8e4 in node::PlatformInit() at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4192</div></div>
 <div><br/></div>
 <div>其主要针对 __POSIX__ 架构做出一些前期初始化：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>inline void PlatformInit() {</div>
-</div>
-<div>#ifdef __POSIX__</div>
-<div>  // 信号集相关处理</div>
-<div>
-<div>  sigset_t sigmask;</div>
-</div>
-<div>  sigemptyset(&amp;sigmask);</div>
-<div>  // #define SIGUSR1 30  /* user defined signal 1 */</div>
-<div>  sigaddset(&amp;sigmask, SIGUSR1);</div>
-<div>...</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>inline void PlatformInit() {</div><div>#ifdef __POSIX__</div><div>  // 信号集相关处理</div><div>  sigset_t sigmask;</div><div>  sigemptyset(&amp;sigmask);</div><div>  // #define SIGUSR1 30  /* user defined signal 1 */</div><div>  sigaddset(&amp;sigmask, SIGUSR1);</div><div>...</div></div>
 <div><br/></div>
 <div>信号集相关知识点，参见：<a href="http://www.cnblogs.com/mickole/p/3191281.html">http://www.cnblogs.com/mickole/p/3191281.html</a></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>信号集被定义为一种数据类型：</div>
-<div><br/></div>
-<div>typedef struct {</div>
-<div>   unsigned long sig[_NSIG_WORDS]；</div>
-<div>} sigset_t</div>
-<div><br/></div>
-<div>信号集用来描述信号的集合，每个信号占用一位（64位）。Linux所支持的所有信号可以全部或部分的出现在信号集中，主要与信号阻塞相关函数配合使用。下面是为信号集操作定义的相关函数：</div>
-<div><br/></div>
-<div>#include &lt;signal.h&gt;</div>
-<div><br/></div>
-<div>int sigemptyset(sigset_t *set)；</div>
-<div>int sigfillset(sigset_t *set)；</div>
-<div>int sigaddset(sigset_t *set, int signum)</div>
-<div>int sigdelset(sigset_t *set, int signum)；</div>
-<div>int sigismember(const sigset_t *set, int signum)；</div>
-<div><br/></div>
-<div>sigemptyset(sigset_t *set)初始化由set指定的信号集，信号集里面的所有信号被清空，相当于64为置0；</div>
-<div>sigfillset(sigset_t *set)调用该函数后，set指向的信号集中将包含linux支持的64种信号，相当于64为都置1；</div>
-<div>sigaddset(sigset_t *set, int signum)在set指向的信号集中加入signum信号，相当于将给定信号所对应的位置1；</div>
-<div>sigdelset(sigset_t *set, int signum)在set指向的信号集中删除signum信号，相当于将给定信号所对应的位置0；</div>
-<div>sigismember(const sigset_t *set, int signum)判定信号signum是否在set指向的信号集中，相当于检查给定信号所对应的位是0还是1。</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>信号集被定义为一种数据类型：</div><div><br/></div><div>typedef struct {</div><div>   unsigned long sig[_NSIG_WORDS]；</div><div>} sigset_t</div><div><br/></div><div>信号集用来描述信号的集合，每个信号占用一位（64位）。Linux所支持的所有信号可以全部或部分的出现在信号集中，主要与信号阻塞相关函数配合使用。下面是为信号集操作定义的相关函数：</div><div><br/></div><div>#include &lt;signal.h&gt;</div><div><br/></div><div>int sigemptyset(sigset_t *set)；</div><div>int sigfillset(sigset_t *set)；</div><div>int sigaddset(sigset_t *set, int signum)</div><div>int sigdelset(sigset_t *set, int signum)；</div><div>int sigismember(const sigset_t *set, int signum)；</div><div><br/></div><div>sigemptyset(sigset_t *set)初始化由set指定的信号集，信号集里面的所有信号被清空，相当于64为置0；</div><div>sigfillset(sigset_t *set)调用该函数后，set指向的信号集中将包含linux支持的64种信号，相当于64为都置1；</div><div>sigaddset(sigset_t *set, int signum)在set指向的信号集中加入signum信号，相当于将给定信号所对应的位置1；</div><div>sigdelset(sigset_t *set, int signum)在set指向的信号集中删除signum信号，相当于将给定信号所对应的位置0；</div><div>sigismember(const sigset_t *set, int signum)判定信号signum是否在set指向的信号集中，相当于检查给定信号所对应的位是0还是1。</div></div>
 <div><br/></div>
 <div>下面的代码，设置好主线程的信号掩码：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>const int err = pthread_sigmask(SIG_SETMASK, &amp;sigmask, nullptr);</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>const int err = pthread_sigmask(SIG_SETMASK, &amp;sigmask, nullptr);</div></div>
 <div><br/></div>
 <div>相关说明：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>/*</div>
-<div> * Flags for sigprocmask:</div>
-<div> */</div>
-<div>#define SIG_BLOCK 1 /* block specified signal set */</div>
-<div>#define SIG_UNBLOCK 2 /* unblock specified signal set */</div>
-<div>#define SIG_SETMASK 3 /* set specified signal set */</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>/*</div><div> * Flags for sigprocmask:</div><div> */</div><div>#define SIG_BLOCK 1 /* block specified signal set */</div><div>#define SIG_UNBLOCK 2 /* unblock specified signal set */</div><div>#define SIG_SETMASK 3 /* set specified signal set */</div></div></div>
 <div><br/></div>
 <div>PlatformInit 函数细节不再深究，太底层了。</div>
 <div><br/></div>
 <hr/>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>int Start(int argc, char** argv) {</div>
-<div>  PlatformInit();</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>int Start(int argc, char** argv) {</div><div>  PlatformInit();</div><div><br/></div></div><div>  CHECK_GT(argc, 0);</div><div>  // argc    int    2</div><div>  // *argv    char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x00007fff5fbff988</div><div>  // Hack around with the argv pointer. Used for process.title = "blah".</div><div>  // 见下【逻辑不太明了，可能是规整一下 argv】</div><div>  argv = uv_setup_args(argc, argv);</div><div>  /*</div><div><div><div>(lldb) print argv[0]</div><div>(char *) $29 = 0x0000000103700018 "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"</div><div>(lldb) print argv[1]</div><div>(char *) $30 = 0x0000000103700086 "/Users/mrguan/work/git/happy/test-nodejs/main.js"</div><div>(lldb) print argv[2]</div><div>(char *) $31 = 0x0000000000000000</div><div>(lldb) print argv[3]</div><div>(char *) $32 = 0x6d2f73726573552f ""</div></div>
+ </div><div>  */</div><div>...</div></div>
 <div><br/></div>
-</div>
-<div>  CHECK_GT(argc, 0);</div>
-<div>  // argc    int    2</div>
-<div>  // *argv    char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x00007fff5fbff988</div>
-<div>  // Hack around with the argv pointer. Used for process.title = "blah".</div>
-<div>  // 见下【逻辑不太明了，可能是规整一下 argv】</div>
-<div>  argv = uv_setup_args(argc, argv);</div>
-<div>  /*</div>
-<div>
-<div>
-<div>(lldb) print argv[0]</div>
-<div>(char *) $29 = 0x0000000103700018 "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"</div>
-<div>(lldb) print argv[1]</div>
-<div>(char *) $30 = 0x0000000103700086 "/Users/mrguan/work/git/happy/test-nodejs/main.js"</div>
-<div>(lldb) print argv[2]</div>
-<div>(char *) $31 = 0x0000000000000000</div>
-<div>(lldb) print argv[3]</div>
-<div>(char *) $32 = 0x6d2f73726573552f ""</div>
-</div>
- </div>
-<div>  */</div>
-<div>...</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001010302ff in uv_setup_args at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/proctitle.c:43</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001010302ff in uv_setup_args at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/proctitle.c:43</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>char** uv_setup_args(int argc, char** argv) {</div><div>  char** new_argv;</div><div>  size_t size;</div><div>  char* s;</div><div>  int i;</div><div><br/></div><div>  if (argc &lt;= 0)</div><div>    return argv;</div><div><br/></div></div><div>  /* Calculate how much memory we need for the argv strings. */</div><div>  // 计算 argv 字符串的总体大小</div><div><div>  size = 0;</div><div>  for (i = 0; i &lt; argc; i++)</div></div><div>    size += strlen(argv[i]) + 1;</div><div>  // 算完以后：size    size_t    159</div><div>  /*</div><div style="margin-left:40px;">static struct {</div><div style="margin-left:40px;">  char* str;</div><div style="margin-left:40px;">  size_t len;</div><div style="margin-left:40px;">} process_title;</div><div>  */</div><div>  // ((anonymous struct)) process_title = (str = "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node", len = 158)</div><div>  process_title.str = argv[0];</div><div>  // 这一这里是指针的加减法运算，返回值是 size_t；指针向减返回自身大小</div><div><div>  process_title.len = argv[argc - 1] + strlen(argv[argc - 1]) - argv[0];</div><div>  assert(process_title.len + 1 == size);  /* argv memory should be adjacent. */</div><div><br/></div><div>  /* Add space for the argv pointers. */</div></div><div>  size += (argc + 1) * sizeof(char*);</div><div>  // size    size_t    183 ( 183 - 159 = 24; 24 / 3 = 8; sizeof( char* ) == 8 )</div><div>  // 见下</div><div><div>  new_argv = uv__malloc(size);</div><div>  if (new_argv == NULL)</div></div><div>    return argv;</div><div>  // static void* args_mem;</div><div>  args_mem = new_argv;</div><div>  // 这里的逻辑看了老半天并没有搞清楚</div><div><div>  /* Copy over the strings and set up the pointer table. */</div><div>  s = (char*) &amp;new_argv[argc + 1];</div><div>  for (i = 0; i &lt; argc; i++) {</div><div>    size = strlen(argv[i]) + 1;</div><div>    memcpy(s, argv[i], size);</div><div>    new_argv[i] = s;</div><div>    s += size;</div><div>  }</div></div><div>  new_argv[i] = NULL;</div><div>  // 看下最终执行完毕的值：</div><div>  /*</div><div>(lldb) print new_argv[0]</div><div>(char *) $21 = 0x0000000103700018 "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"</div><div>(lldb) print new_argv[1]</div><div>(char *) $22 = 0x0000000103700086 "/Users/mrguan/work/git/happy/test-nodejs/main.js" </div><div>(lldb) print new_argv[2] null</div><div>(char *) $24 = 0x0000000000000000</div><div>  */</div><div><div>  return new_argv;</div><div>}</div></div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>char** uv_setup_args(int argc, char** argv) {</div>
-<div>  char** new_argv;</div>
-<div>  size_t size;</div>
-<div>  char* s;</div>
-<div>  int i;</div>
-<div><br/></div>
-<div>  if (argc &lt;= 0)</div>
-<div>    return argv;</div>
-<div><br/></div>
-</div>
-<div>  /* Calculate how much memory we need for the argv strings. */</div>
-<div>  // 计算 argv 字符串的总体大小</div>
-<div>
-<div>  size = 0;</div>
-<div>  for (i = 0; i &lt; argc; i++)</div>
-</div>
-<div>    size += strlen(argv[i]) + 1;</div>
-<div>  // 算完以后：size    size_t    159</div>
-<div>  /*</div>
-<div style="margin-left:40px;">static struct {</div>
-<div style="margin-left:40px;">  char* str;</div>
-<div style="margin-left:40px;">  size_t len;</div>
-<div style="margin-left:40px;">} process_title;</div>
-<div>  */</div>
-<div>  // ((anonymous struct)) process_title = (str = "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node", len = 158)</div>
-<div>  process_title.str = argv[0];</div>
-<div>  // 这一这里是指针的加减法运算，返回值是 size_t；指针向减返回自身大小</div>
-<div>
-<div>  process_title.len = argv[argc - 1] + strlen(argv[argc - 1]) - argv[0];</div>
-<div>  assert(process_title.len + 1 == size);  /* argv memory should be adjacent. */</div>
-<div><br/></div>
-<div>  /* Add space for the argv pointers. */</div>
-</div>
-<div>  size += (argc + 1) * sizeof(char*);</div>
-<div>  // size    size_t    183 ( 183 - 159 = 24; 24 / 3 = 8; sizeof( char* ) == 8 )</div>
-<div>  // 见下</div>
-<div>
-<div>  new_argv = uv__malloc(size);</div>
-<div>  if (new_argv == NULL)</div>
-</div>
-<div>    return argv;</div>
-<div>  // static void* args_mem;</div>
-<div>  args_mem = new_argv;</div>
-<div>  // 这里的逻辑看了老半天并没有搞清楚</div>
-<div>
-<div>  /* Copy over the strings and set up the pointer table. */</div>
-<div>  s = (char*) &amp;new_argv[argc + 1];</div>
-<div>  for (i = 0; i &lt; argc; i++) {</div>
-<div>    size = strlen(argv[i]) + 1;</div>
-<div>    memcpy(s, argv[i], size);</div>
-<div>    new_argv[i] = s;</div>
-<div>    s += size;</div>
-<div>  }</div>
-</div>
-<div>  new_argv[i] = NULL;</div>
-<div>  // 看下最终执行完毕的值：</div>
-<div>  /*</div>
-<div>(lldb) print new_argv[0]</div>
-<div>(char *) $21 = 0x0000000103700018 "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"</div>
-<div>(lldb) print new_argv[1]</div>
-<div>(char *) $22 = 0x0000000103700086 "/Users/mrguan/work/git/happy/test-nodejs/main.js" </div>
-<div>(lldb) print new_argv[2] null</div>
-<div>
-<div>(char *) $24 = 0x0000000000000000</div>
-</div>
-<div>  */</div>
-<div>
-<div>  return new_argv;</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void* uv__malloc(size_t size) {</div>
-<div>  return uv__allocator.local_malloc(size);</div>
-<div>}</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>void* uv__malloc(size_t size) {</div><div>  return uv__allocator.local_malloc(size);</div><div>}</div></div></div>
 <div><br/></div>
 <div>结构体定义，其实 uv__allocator.local_malloc 调用的即是：malloc 函数</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>typedef struct {</div>
-<div>  uv_malloc_func local_malloc;</div>
-<div>  uv_realloc_func local_realloc;</div>
-<div>  uv_calloc_func local_calloc;</div>
-<div>  uv_free_func local_free;</div>
-<div>} uv__allocator_t;</div>
-<div><br/></div>
-<div>static uv__allocator_t uv__allocator = {</div>
-<div>  malloc,</div>
-<div>  realloc,</div>
-<div>  calloc,</div>
-<div>  free,</div>
-<div>};</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>typedef struct {</div><div>  uv_malloc_func local_malloc;</div><div>  uv_realloc_func local_realloc;</div><div>  uv_calloc_func local_calloc;</div><div>  uv_free_func local_free;</div><div>} uv__allocator_t;</div><div><br/></div><div>static uv__allocator_t uv__allocator = {</div><div>  malloc,</div><div>  realloc,</div><div>  calloc,</div><div>  free,</div><div>};</div></div></div>
 <div><br/></div>
 <div>
 <hr/></div>
 <div>进入 Init 函数，此函数进行前期初始化：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010002aa68 in node::Init(int*, char const**, int*, char const***) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4257</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010002aa68 in node::Init(int*, char const**, int*, char const***) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4257</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void Init(int* argc,</div>
-<div>          const char** argv,</div>
-<div>          int* exec_argc,</div>
-</div>
-<div>          const char*** exec_argv) {</div>
-<div>  // *argc    int    2</div>
-<div>  // *argv    const char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x0000000103700018</div>
-<div>  // 摘录：</div>
-<div>  // process-relative uptime base, initialized at start-up</div>
-<div>  // static double prog_start_time;</div>
-<div>  // Initialize prog_start_time to get relative uptime.</div>
-<div>  // 初始化进程开始时间，便于计算相对时间</div>
-<div>
-<div>  prog_start_time = static_cast&lt;double&gt;(uv_now(uv_default_loop()));</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>void Init(int* argc,</div><div>          const char** argv,</div><div>          int* exec_argc,</div></div><div>          const char*** exec_argv) {</div><div>  // *argc    int    2</div><div>  // *argv    const char *    "/Users/mrguan/Library/Developer/Xcode/DerivedData/node-futymbczmnmictbosivpqywxtklk/Build/Products/Debug/node"    0x0000000103700018</div><div>  // 摘录：</div><div>  // process-relative uptime base, initialized at start-up</div><div>  // static double prog_start_time;</div><div>  // Initialize prog_start_time to get relative uptime.</div><div>  // 初始化进程开始时间，便于计算相对时间</div><div><div>  prog_start_time = static_cast&lt;double&gt;(uv_now(uv_default_loop()));</div><div><br/></div><div>  // Make inherited handles noninheritable.</div></div><div>  uv_disable_stdio_inheritance();</div><div>...</div></div>
 <div><br/></div>
-<div>  // Make inherited handles noninheritable.</div>
-</div>
-<div>  uv_disable_stdio_inheritance();</div>
-<div>...</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000101016b2d in uv_default_loop at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/uv-common.c:589</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000101016b2d in uv_default_loop at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/uv-common.c:589</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>static uv_loop_t default_loop_struct;</div><div>static uv_loop_t* default_loop_ptr;</div><div><br/></div></div><div>uv_loop_t* uv_default_loop(void) {</div><div>  // 默认为 NULL</div><div>  if (default_loop_ptr != NULL)</div><div>    return default_loop_ptr;</div><div>  // 初始化 loop</div><div><div>  if (uv_loop_init(&amp;default_loop_struct))</div><div>    return NULL;</div><div><br/></div><div>  default_loop_ptr = &amp;default_loop_struct;</div><div>  return default_loop_ptr;</div><div>}</div></div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>static uv_loop_t default_loop_struct;</div>
-<div>static uv_loop_t* default_loop_ptr;</div>
-<div><br/></div>
-</div>
-<div>uv_loop_t* uv_default_loop(void) {</div>
-<div>  // 默认为 NULL</div>
-<div>
-<div>  if (default_loop_ptr != NULL)</div>
-</div>
-<div>    return default_loop_ptr;</div>
-<div>  // 初始化 loop</div>
-<div>
-<div>  if (uv_loop_init(&amp;default_loop_struct))</div>
-<div>    return NULL;</div>
-<div><br/></div>
-<div>  default_loop_ptr = &amp;default_loop_struct;</div>
-<div>  return default_loop_ptr;</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010101fcbc in uv_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/loop.c:33</div>
-</div>
-</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>因为涉及到了 lib_uv 的一些知识，贴上相关链接和概念图：</div>
-<div><br/></div>
-<div>官方文档：<a href="http://docs.libuv.org/en/v1.x/design.html">http://docs.libuv.org/en/v1.x/design.html</a></div>
-<div>不错的中文翻译：<a href="http://luohaha.github.io/Chinese-uvbook/source/basics_of_libuv.html">http://luohaha.github.io/Chinese-uvbook/source/basics_of_libuv.html</a></div>
-<div><br/></div>
-<div>架构图：</div>
-<div><br/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/4E67F7A2-7EDD-4A47-AA1C-D757B1B54C16.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010101fcbc in uv_loop_init at /Users/mrguan/work/build/node/node-6.6.0/deps/uv/src/unix/loop.c:33</div></div>
+</div><div><br/></div><div>
+<hr/></div><div><br/></div><div>因为涉及到了 lib_uv 的一些知识，贴上相关链接和概念图：</div><div><br/></div><div>官方文档：<a href="http://docs.libuv.org/en/v1.x/design.html">http://docs.libuv.org/en/v1.x/design.html</a></div><div>不错的中文翻译：<a href="http://luohaha.github.io/Chinese-uvbook/source/basics_of_libuv.html">http://luohaha.github.io/Chinese-uvbook/source/basics_of_libuv.html</a></div><div><br/></div><div>架构图：</div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/4E67F7A2-7EDD-4A47-AA1C-D757B1B54C16.png" height="auto" width="100%"/><br/></div><div><br/></div><div>
 <div style="font-family: Arial, sans-serif; background-color: rgb(200, 213, 227); font-weight: normal; color: rgb(33, 34, 36); padding: 5px 0px 5px 10px; text-shadow: white 0px 1px 0px; font-size: 22px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px;">
 <div>Handles and requests</div>
 </div>
-</div>
-<div>libuv provides users with 2 abstractions to work with, in combination with the event loop: handles and requests.</div>
-<div><br/></div>
-<div>Handles represent long-lived objects capable of performing certain operations while active. Some examples: a prepare handle gets its callback called once every loop iteration when active, and a TCP server handle get its connection callback called every time there is a new connection.</div>
-<div><br/></div>
-<div>Requests represent (typically) short-lived operations. These operations can be performed over a handle: write requests are used to write data on a handle; or standalone: getaddrinfo requests don’t need a handle they run directly on the loop.</div>
-<div><br/></div>
-<div><br/></div>
-<div>
+</div><div><br/></div><div>libuv provides users with 2 abstractions to work with, in combination with the event loop: handles and requests.</div><div><br/></div><div>Handles represent long-lived objects capable of performing certain operations while active. Some examples: a prepare handle gets its callback called once every loop iteration when active, and a TCP server handle get its connection callback called every time there is a new connection.</div><div><br/></div><div>Requests represent (typically) short-lived operations. These operations can be performed over a handle: write requests are used to write data on a handle; or standalone: getaddrinfo requests don’t need a handle they run directly on the loop.</div><div><br/></div><div><br/></div><div>
 <div style="font-family: Arial, sans-serif; background-color: rgb(200, 213, 227); font-weight: normal; color: rgb(33, 34, 36); padding: 5px 0px 5px 10px; text-shadow: white 0px 1px 0px; font-size: 22px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; letter-spacing: normal; orphans: 2; text-align: start; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px;">
 <div>The I/O loop</div>
 </div>
-</div>
-<div>The I/O (or event) loop is the central part of libuv. It establishes the content for all I/O operations, and it’s meant to be tied to a single thread. One can run multiple event loops as long as each runs in a different thread. The libuv event loop (or any other API involving the loop or handles, for that matter) is not thread-safe except where stated otherwise.</div>
-<div><br/></div>
-<div>The event loop follows the rather usual single threaded asynchronous I/O approach: all (network) I/O is performed on non-blocking sockets which are polled using the best mechanism available on the given platform: epoll on Linux, kqueue on OSX and other BSDs, event ports on SunOS and IOCP on Windows. As part of a loop iteration the loop will block waiting for I/O activity on sockets which have been added to the poller and callbacks will be fired indicating socket conditions (readable, writable hangup) so handles can read, write or perform the desired I/O operation.</div>
-<div><br/></div>
-<div>In order to better understand how the event loop operates, the following diagram illustrates all stages of a loop iteration:</div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B22B7DDB-A52E-44E9-8ECC-5754E99DD662.png" height="auto" width="100%"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/E31B2BC0-92D0-45B6-9DE0-9A69945F7C0F.png" height="auto" width="100%"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/98A2D0D9-BC6C-4852-AC79-CBF0C3FA1B03.png" height="auto" width="100%"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5AB5AABE-1451-4812-9EFF-7F1F72074468.png" height="auto" width="100%"/></div>
-<div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B069BE66-68AD-4F27-A0CF-3C7E71FC8B08.png" height="auto" width="100%"/></div>
-<div>以上都是重要部分的截图，更加详细参看上方的官方链接信息。</div>
-
+</div><div><br/></div><div>The I/O (or event) loop is the central part of libuv. It establishes the content for all I/O operations, and it’s meant to be tied to a single thread. One can run multiple event loops as long as each runs in a different thread. The libuv event loop (or any other API involving the loop or handles, for that matter) is not thread-safe except where stated otherwise.</div><div><br/></div><div>The event loop follows the rather usual single threaded asynchronous I/O approach: all (network) I/O is performed on non-blocking sockets which are polled using the best mechanism available on the given platform: epoll on Linux, kqueue on OSX and other BSDs, event ports on SunOS and IOCP on Windows. As part of a loop iteration the loop will block waiting for I/O activity on sockets which have been added to the poller and callbacks will be fired indicating socket conditions (readable, writable hangup) so handles can read, write or perform the desired I/O operation.</div><div><br/></div><div>In order to better understand how the event loop operates, the following diagram illustrates all stages of a loop iteration:</div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B22B7DDB-A52E-44E9-8ECC-5754E99DD662.png" height="auto" width="100%"/><br/></div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/E31B2BC0-92D0-45B6-9DE0-9A69945F7C0F.png" height="auto" width="100%"/><br/></div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/98A2D0D9-BC6C-4852-AC79-CBF0C3FA1B03.png" height="auto" width="100%"/><br/></div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/5AB5AABE-1451-4812-9EFF-7F1F72074468.png" height="auto" width="100%"/><br/></div><div><br/></div><div><img src="NodeJS%20%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B1.resources/B069BE66-68AD-4F27-A0CF-3C7E71FC8B08.png" height="auto" width="100%"/><br/></div><div><br/></div><div>以上都是重要部分的截图，更加详细参看上方的官方链接信息。</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

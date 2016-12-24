@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-18 09:22:29 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-18 09:29:07 +0000"/><title>NodeJS 启动流程5</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-18 09:22:29 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 06:39:06 +0000"/><title>NodeJS 启动流程5</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,45 +11,11 @@
 <h2>NodeJS 启动流程5</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>上节分析到了 loadEnvironment 函数，执行完了 bootstrap_node.js 中的模块逻辑，接着回到：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010002cf58 in node::StartNodeInstance(void*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4585</div>
-<div><br/></div>
-<div>...</div>
-<div>    // 决定事件循环会不会再执行的，是这个代码块，此代码块需要针对 lib_uv 做出很多分析，故不在 NodeJS 启动流程中分析</div>
-<div>    // 在有关 lib_uv 的章节中分析</div>
-<div>
-<div>    {</div>
-<div>      SealHandleScope seal(isolate);</div>
-<div>      bool more;</div>
-<div>      do {</div>
-<div>        v8_platform.PumpMessageLoop(isolate);</div>
-<div>        more = uv_run(env-&gt;event_loop(), UV_RUN_ONCE);</div>
-<div><br/></div>
-<div>        if (more == false) {</div>
-<div>          v8_platform.PumpMessageLoop(isolate);</div>
-<div>          EmitBeforeExit(env);</div>
-<div><br/></div>
-<div>          // Emit `beforeExit` if the loop became alive either after emitting</div>
-<div>          // event, or after running some callbacks.</div>
-<div>          more = uv_loop_alive(env-&gt;event_loop());</div>
-<div>          if (uv_run(env-&gt;event_loop(), UV_RUN_NOWAIT) != 0)</div>
-<div>            more = true;</div>
-<div>        }</div>
-<div>      } while (more == true);</div>
-</div>
-<div>    }</div>
-<div>...</div>
-</div>
-<div><br/></div>
-<div>后面的逻辑主要是进程退出相关消息发送和内存回收，不再赘述。</div>
-
+<hr class="title-hr"><div>上节分析到了 loadEnvironment 函数，执行完了 bootstrap_node.js 中的模块逻辑，接着回到：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010002cf58 in node::StartNodeInstance(void*) at /Users/mrguan/work/build/node/node-6.6.0/src/node.cc:4585</div><div><br/></div><div>...</div><div>    // 决定事件循环会不会再执行的，是这个代码块，此代码块需要针对 lib_uv 做出很多分析，故不在 NodeJS 启动流程中分析</div><div>    // 在有关 lib_uv 的章节中分析</div><div><div>    {</div><div>      SealHandleScope seal(isolate);</div><div>      bool more;</div><div>      do {</div><div>        v8_platform.PumpMessageLoop(isolate);</div><div>        more = uv_run(env-&gt;event_loop(), UV_RUN_ONCE);</div><div><br/></div><div>        if (more == false) {</div><div>          v8_platform.PumpMessageLoop(isolate);</div><div>          EmitBeforeExit(env);</div><div><br/></div><div>          // Emit `beforeExit` if the loop became alive either after emitting</div><div>          // event, or after running some callbacks.</div><div>          more = uv_loop_alive(env-&gt;event_loop());</div><div>          if (uv_run(env-&gt;event_loop(), UV_RUN_NOWAIT) != 0)</div><div>            more = true;</div><div>        }</div><div>      } while (more == true);</div></div><div>    }</div><div>...</div></div><div><br/></div><div><br/></div><div>后面的逻辑主要是进程退出相关消息发送和内存回收，不再赘述。</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

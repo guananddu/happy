@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-22 14:06:27 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-10-24 08:46:19 +0000"/><title>资源字节流到 DOM 树的构建过程3 - commitIfReady 与 PageCache 处理</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-22 14:06:27 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:29:22 +0000"/><title>资源字节流到 DOM 树的构建过程3 - commitIfReady 与 PageCache 处理</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,300 +11,29 @@
 <h2>资源字节流到 DOM 树的构建过程3 - commitIfReady 与 PageCache 处理</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div>在位置：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#6    0x000000010709631c in WebCore::DocumentLoader::commitLoad(char const*, int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:822</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#6    0x000000010709631c in WebCore::DocumentLoader::commitLoad(char const*, int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:822</div></div>
 <div><br/></div>
 <div>中的 commitIfReady 中做了关于 PageCache 的操作处理。它首先将 DocumentLoader 的 m_committed 状态置为 true，然后执行：frameLoader()-&gt;commitProvisionalLoad() 调用，此函数体很长。这里也有关于 IOS 系统中是如何处理 pageCache 的逻辑的。</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#4    0x00000001073e3c90 in WebCore::FrameLoader::commitProvisionalLoad() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1783</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#4    0x00000001073e3c90 in WebCore::FrameLoader::commitProvisionalLoad() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1783</div><div><br/></div><div>...</div><div>    // 如果当前的 frame 为顶层 frame，且有当前历史记录</div><div>    // (lldb) print history().currentItem()-&gt;url().string().show()</div><div>    // http://localhost:8111/sample.html?101 这是当前正在访问的页面，我们要转向 100</div><div><br/></div><div><div>    if (!m_frame.tree().parent() &amp;&amp; history().currentItem()) {</div><div>        // Check to see if we need to cache the page we are navigating away from into the back/forward cache.</div><div>        // We are doing this here because we know for sure that a new page is about to be loaded.</div><div>        PageCache::singleton().addIfCacheable(*history().currentItem(), m_frame.page());</div></div><div>...</div></div>
 <div><br/></div>
-<div>...</div>
-<div>    // 如果当前的 frame 为顶层 frame，且有当前历史记录</div>
-<div>    // (lldb) print history().currentItem()-&gt;url().string().show()</div>
-<div>    // http://localhost:8111/sample.html?101 这是当前正在访问的页面，我们要转向 100</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#3    0x000000010839367d in WebCore::PageCache::addIfCacheable(WebCore::HistoryItem&amp;, WebCore::Page*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:390</div><div><br/></div><div><div>void PageCache::addIfCacheable(HistoryItem&amp; item, Page* page)</div><div>{</div><div>    if (item.isInPageCache())</div></div><div>        return;</div><div>    // 看这里的 canCache 函数</div><div>    if (!page || !canCache(*page))</div><div>        return;</div><div>...</div></div>
 <div><br/></div>
-<div>
-<div>    if (!m_frame.tree().parent() &amp;&amp; history().currentItem()) {</div>
-<div>        // Check to see if we need to cache the page we are navigating away from into the back/forward cache.</div>
-<div>        // We are doing this here because we know for sure that a new page is about to be loaded.</div>
-<div>        PageCache::singleton().addIfCacheable(*history().currentItem(), m_frame.page());</div>
-</div>
-<div>...</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#2    0x00000001083928b1 in WebCore::PageCache::canCache(WebCore::Page&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:289</div><div><br/></div><div>#1    0x00000001083929ba in WebCore::canCachePage(WebCore::Page&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:195</div><div><br/></div><div><div>static bool canCachePage(Page&amp; page)</div><div>{</div><div>    unsigned indentLevel = 0;</div><div>    PCLOG("--------\n Determining if page can be cached:");</div><div><br/></div></div><div>    DiagnosticLoggingClient&amp; diagnosticLoggingClient = page.diagnosticLoggingClient();</div><div>    // 接着看 canCacheFrame 函数；有很多判断逻辑</div><div>    bool isCacheable = canCacheFrame(page.mainFrame(), diagnosticLoggingClient, indentLevel + 1);</div><div>...</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#3    0x000000010839367d in WebCore::PageCache::addIfCacheable(WebCore::HistoryItem&amp;, WebCore::Page*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:390</div>
-<div><br/></div>
-<div>
-<div>void PageCache::addIfCacheable(HistoryItem&amp; item, Page* page)</div>
-<div>{</div>
-<div>    if (item.isInPageCache())</div>
-</div>
-<div>        return;</div>
-<div>    // 看这里的 canCache 函数</div>
-<div>
-<div>    if (!page || !canCache(*page))</div>
-</div>
-<div>        return;</div>
-<div>...</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#2    0x00000001083928b1 in WebCore::PageCache::canCache(WebCore::Page&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:289</div>
-<div><br/></div>
-<div>#1    0x00000001083929ba in WebCore::canCachePage(WebCore::Page&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:195</div>
-<div><br/></div>
-<div>
-<div>static bool canCachePage(Page&amp; page)</div>
-<div>{</div>
-<div>    unsigned indentLevel = 0;</div>
-<div>    PCLOG("--------\n Determining if page can be cached:");</div>
-<div><br/></div>
-</div>
-<div>    DiagnosticLoggingClient&amp; diagnosticLoggingClient = page.diagnosticLoggingClient();</div>
-<div>    // 接着看 canCacheFrame 函数；有很多判断逻辑</div>
-<div>    bool isCacheable = canCacheFrame(page.mainFrame(), diagnosticLoggingClient, indentLevel + 1);</div>
-<div>...</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000108395959 in WebCore::canCacheFrame(WebCore::Frame&amp;, WebCore::DiagnosticLoggingClient&amp;, unsigned int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:186</div>
-<div><br/></div>
-<div>这个函数的判断逻辑很多，就是在判断到底能不能缓存当前的 frame，以下为不能缓存的case：</div>
-<div><br/></div>
-<div>1,  // Prevent page caching if a subframe is still in provisional load stage.</div>
-<div>    // We only do this check for subframes because the main frame is reused when navigating to a new page.</div>
-<div>2,  !documentLoader-&gt;mainDocumentError().isNull()</div>
-<div>3,  Do not cache error pages (these can be recognized as pages with substitute data or unreachable URLs).</div>
-<div>4,  frameLoader.subframeLoader().containsPlugins() &amp;&amp; !frame.page()-&gt;settings().pageCacheSupportsPlugins()</div>
-<div>5,  -Frame is HTTPS, and cache control prohibits storing</div>
-<div>6,  -Main frame has no current history item</div>
-<div>7,  -Quick redirect is coming</div>
-<div>8,  -DocumentLoader is still loading</div>
-<div>9,  -DocumentLoader is in the middle of stopping</div>
-<div>10, -The document cannot suspend its active DOM Objects</div>
-<div>11, -The DocumentLoader uses an application cache</div>
-<div>12, -The client says this frame cannot be cached</div>
-<div>13, 递归：    for (Frame* child = frame.tree().firstChild(); child; child = child-&gt;tree().nextSibling()) {</div>
-<div>        if (!canCacheFrame(*child, diagnosticLoggingClient, indentLevel + 1))</div>
-<div>            isCacheable = false;</div>
-<div>    }</div>
-<div><br/></div>
-<div>如果最终都通过这些检查，则能缓存 frame，WebCore::canCacheFrame 最终返回值</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000108395959 in WebCore::canCacheFrame(WebCore::Frame&amp;, WebCore::DiagnosticLoggingClient&amp;, unsigned int) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:186</div><div><br/></div><div>这个函数的判断逻辑很多，就是在判断到底能不能缓存当前的 frame，以下为不能缓存的case：</div><div><br/></div><div>1,  // Prevent page caching if a subframe is still in provisional load stage.</div><div>    // We only do this check for subframes because the main frame is reused when navigating to a new page.</div><div>2,  !documentLoader-&gt;mainDocumentError().isNull()</div><div>3,  Do not cache error pages (these can be recognized as pages with substitute data or unreachable URLs).</div><div>4,  frameLoader.subframeLoader().containsPlugins() &amp;&amp; !frame.page()-&gt;settings().pageCacheSupportsPlugins()</div><div>5,  -Frame is HTTPS, and cache control prohibits storing</div><div>6,  -Main frame has no current history item</div><div>7,  -Quick redirect is coming</div><div>8,  -DocumentLoader is still loading</div><div>9,  -DocumentLoader is in the middle of stopping</div><div>10, -The document cannot suspend its active DOM Objects</div><div>11, -The DocumentLoader uses an application cache</div><div>12, -The client says this frame cannot be cached</div><div>13, 递归：    for (Frame* child = frame.tree().firstChild(); child; child = child-&gt;tree().nextSibling()) {</div><div>        if (!canCacheFrame(*child, diagnosticLoggingClient, indentLevel + 1))</div><div>            isCacheable = false;</div><div>    }</div><div><br/></div><div>如果最终都通过这些检查，则能缓存 frame，WebCore::canCacheFrame 最终返回值</div></div>
 <div><br/></div>
 <div>WebCore::canCacheFrame 虽然执行完毕了，但是 WebCore::canCachePage(WebCore::Page&amp;) 仍旧没有执行完毕，继续执行：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>...</div>
-<div>    // 这里已经执行完毕</div>
-<div>
-<div>    bool isCacheable = canCacheFrame(page.mainFrame(), diagnosticLoggingClient, indentLevel + 1);</div>
-</div>
-<div><br/></div>
-<div>    // 下面还有一大堆判断，来决定是不是缓存Page</div>
-<div>
-<div>    if (!page.settings().usesPageCache() || page.isResourceCachingDisabled()) {</div>
-<div>        PCLOG("   -Page settings says b/f cache disabled");</div>
-<div>        logPageCacheFailureDiagnosticMessage(diagnosticLoggingClient, DiagnosticLoggingKeys::isDisabledKey());</div>
-<div>        isCacheable = false;</div>
-</div>
-<div>...</div>
-<div>    // loadType    WebCore::FrameLoadType    Standard</div>
-<div>
-<div>    FrameLoadType loadType = page.mainFrame().loader().loadType();</div>
-</div>
-<div>    switch (loadType) {</div>
-<div>...</div>
-<div><br/></div>
-<div>条件判断，以下为不能缓存的case：</div>
-<div><br/></div>
-<div>-Page settings says b/f cache disabled</div>
-<div>-Load type is: Reload(// No point writing to the cache on a reload, since we will just write over it again when we leave that page.)</div>
-<div>-Load type is: Same( // user loads same URL again (but not reload button) // No point writing to the cache on a same load, since we will just write over it again when we leave that page.)</div>
-<div>-Load type is: RedirectWithLockedBackForwardList(// Don't write to the cache if in the middle of a redirect, since we will want to store the final page we end up on.)</div>
-<div>-Load type is: Replace(// No point writing to the cache on a replace, since we will just write over it again when we leave that page.)</div>
-<div>-Load type is: ReloadFromOrigin(// No point writing to the cache on a replace, since we will just write over it again when we leave that page.)</div>
-<div><br/></div>
-</div>
-</div>
-<div><br/></div>
-<div>最终返回至函数：WebCore::PageCache::addIfCacheable 中，继续往下执行：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#2    0x000000010839369b in WebCore::PageCache::addIfCacheable(WebCore::HistoryItem&amp;, WebCore::Page*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:394</div>
-<div><br/></div>
-<div>...</div>
-<div>    // 此句代码，必然是把当前已经展示的页面设置入PageCache</div>
-<div>
-<div>    // Make sure all the documents know they are being added to the PageCache.</div>
-<div>    setInPageCache(*page, true);</div>
-</div>
-<div>...</div>
-<div><br/></div>
-<div>#1    0x0000000108393ab5 in WebCore::setInPageCache(WebCore::Page&amp;, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:363</div>
-<div><br/></div>
-<div>
-<div>static void setInPageCache(Page&amp; page, bool isInPageCache)</div>
-<div>{</div>
-<div>    for (Frame* frame = &amp;page.mainFrame(); frame; frame = frame-&gt;tree().traverseNext()) {</div>
-</div>
-<div>        if (auto* document = frame-&gt;document())</div>
-<div>            // 最后会调入此函数</div>
-<div>
-<div>            document-&gt;setInPageCache(isInPageCache);</div>
-<div>    }</div>
-</div>
-<div>}</div>
-<div><br/></div>
-<div>来看 document 的 setInPageCache 函数：</div>
-<div><br/></div>
-<div>#0    0x0000000107027b37 in WebCore::Document::setInPageCache(bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:4617</div>
-<div><br/></div>
-<div>
-<div>void Document::setInPageCache(bool flag)</div>
-<div>{</div>
-<div>    if (m_inPageCache == flag)</div>
-<div>        return;</div>
-</div>
-<div><br/></div>
-<div>    // this    WebCore::HTMLDocument *    0x1165d2200    0x00000001165d2200</div>
-<div>    // flag    bool    true</div>
-<div>    // v    WebCore::FrameView *    0x115f72600    0x0000000115f72600</div>
-<div>    // page    WebCore::Page *    0x115ff8000    0x0000000115ff8000</div>
-<div>    // 设置自己的缓存状态</div>
-<div>    m_inPageCache = flag;</div>
-<div>    // 获取 FrameView</div>
-<div>
-<div>    FrameView* v = view();</div>
-<div>    Page* page = this-&gt;page();</div>
-<div><br/></div>
-</div>
-<div>    if (flag) {</div>
-<div>        // 如果存在 FrameView 则必然当前页面已经是可展示状态，则要缓存此页面做准备</div>
-<div>
-<div>        if (v) {</div>
-<div>            // FIXME: There is some scrolling related work that needs to happen whenever a page goes into the</div>
-<div>            // page cache and similar work that needs to occur when it comes out. This is where we do the work</div>
-<div>            // that needs to happen when we enter, and the work that needs to happen when we exit is in</div>
-<div>            // HistoryController::restoreScrollPositionAndViewState(). It can't be here because this function is</div>
-<div>            // called too early on in the process of a page exiting the cache for that work to be possible in this</div>
-<div>            // function. It would be nice if there was more symmetry here.</div>
-</div>
-<div>            // <a href="https://bugs.webkit.org/show_bug.cgi?id=98698">https://bugs.webkit.org/show_bug.cgi?id=98698</a></div>
-<div>            // 记录当前页面的scroll值</div>
-<div>            // 下面还有一些列的重置工作，不再深究，仅作记录</div>
-<div>
-<div>            v-&gt;cacheCurrentScrollPosition();</div>
-<div>            if (page &amp;&amp; m_frame-&gt;isMainFrame()) {</div>
-<div>                v-&gt;resetScrollbarsAndClearContentsSize();</div>
-<div>                if (ScrollingCoordinator* scrollingCoordinator = page-&gt;scrollingCoordinator())</div>
-<div>                    scrollingCoordinator-&gt;clearStateTree();</div>
-<div>            } else</div>
-<div>                v-&gt;resetScrollbars();</div>
-<div>        }</div>
-<div>        m_styleRecalcTimer.stop();</div>
-<div><br/></div>
-<div>        clearStyleResolver();</div>
-<div>        clearSelectorQueryCache();</div>
-<div>        clearSharedObjectPool();</div>
-<div>    } else {</div>
-<div>        if (childNeedsStyleRecalc())</div>
-<div>            scheduleStyleRecalc();</div>
-<div>    }</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>addIfCacheable 的最后：</div>
-<div><span style="color: rgb(51, 51, 51);"><span style="font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;"><span style="font-size: 12px;"><br/></span></span></span></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>    ...</div>
-<div>    // item    WebCore::HistoryItem &amp;    0x0000000121ead898 // 当前的页面历史记录</div>
-<div>    // 设置当前的CachedPage</div>
-<div>    item.m_cachedPage = std::make_unique&lt;CachedPage&gt;(*page);</div>
-<div>    item.m_pruningReason = PruningReason::None;</div>
-<div>    // m_items    WTF::ListHashSet&lt;WTF::RefPtr&lt;WebCore::HistoryItem&gt;, WTF::PtrHash&lt;WTF::RefPtr&lt;WebCore::HistoryItem&gt; &gt; &gt;   </div>
-<div>    m_items.add(&amp;item);</div>
-<div>    // 此函数分析见下：</div>
-<div>    prune(PruningReason::ReachedMaxSize);</div>
-<div>}</div>
-<div><br/></div>
-<div>...</div>
-<div><br/></div>
-<div>#0    0x00000001083930ab in WebCore::PageCache::prune(WebCore::PruningReason) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:471</div>
-<div><br/></div>
-<div>
-<div>void PageCache::prune(PruningReason pruningReason)</div>
-</div>
-<div>{</div>
-<div>    // (lldb) print pageCount()  (unsigned int) $96 = 3 // 当前已有的历史记录数量</div>
-<div>    // (lldb) print maxSize()  (unsigned int) $97 = 2  // 允许的最大值</div>
-<div>    // 明显现在超过</div>
-<div>    while (pageCount() &gt; maxSize()) {</div>
-<div>        // 拿到第一个</div>
-<div>        auto oldestItem = m_items.takeFirst();</div>
-<div>        oldestItem-&gt;m_cachedPage = nullptr; // 销毁</div>
-<div>
-<div>        oldestItem-&gt;m_pruningReason = pruningReason;</div>
-<div>    }</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>分析导致里，PageCache 的处理步骤大致明了：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>    if (!m_frame.tree().parent() &amp;&amp; history().currentItem()) {</div>
-<div>        // Check to see if we need to cache the page we are navigating away from into the back/forward cache.</div>
-<div>        // We are doing this here because we know for sure that a new page is about to be loaded.</div>
-</div>
-<div>        PageCache::singleton().addIfCacheable(*history().currentItem(), m_frame.page());</div>
-</div>
-<div><br/></div>
-<div>上述函数调用，通过综合判断当前frame中页面的各种情况，来判断其是不是符合归入PageCache的条件，一旦符合条件，就会把它放入由HistoryItem管理的PageCache中，同时每放入一个cache，都会进行cache列表的“修剪”操作，如果超出最大值数量，会把最早放入队列中的cache删除掉。</div>
-<div><br/></div>
-<div>再往后，会调用：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001073e4a1a in WebCore::FrameLoader::transitionToCommitted(WebCore::CachedPage*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1941</div>
-<div><br/></div>
-<div>...</div>
-<div>    // this    WebCore::FrameLoader *    0x1153dfca0    0x00000001153dfca0</div>
-<div>
-<div>    setState(FrameStateCommittedPage);</div>
-</div>
-<div>...</div>
-<div><br/></div>
-<div>
-<div>namespace WebCore {</div>
-<div><br/></div>
-<div>    enum FrameState {</div>
-</div>
-<div>        FrameStateProvisional,</div>
-<div>        // 设置成自身的状态</div>
-<div>
-<div>        // This state indicates we are ready to commit to a page,</div>
-<div>        // which means the view will transition to use the new data source.</div>
-<div>        FrameStateCommittedPage,</div>
-<div>        FrameStateComplete</div>
-</div>
-<div>    };</div>
-<div>...</div>
-</div>
-<div><br/></div>
-
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>...</div><div>    // 这里已经执行完毕</div><div>    bool isCacheable = canCacheFrame(page.mainFrame(), diagnosticLoggingClient, indentLevel + 1);</div><div><br/></div><div>    // 下面还有一大堆判断，来决定是不是缓存Page</div><div><div>    if (!page.settings().usesPageCache() || page.isResourceCachingDisabled()) {</div><div>        PCLOG("   -Page settings says b/f cache disabled");</div><div>        logPageCacheFailureDiagnosticMessage(diagnosticLoggingClient, DiagnosticLoggingKeys::isDisabledKey());</div><div>        isCacheable = false;</div></div><div>...</div><div>    // loadType    WebCore::FrameLoadType    Standard</div><div>    FrameLoadType loadType = page.mainFrame().loader().loadType();</div><div>    switch (loadType) {</div><div>...</div><div><br/></div><div>条件判断，以下为不能缓存的case：</div><div><br/></div><div>-Page settings says b/f cache disabled</div><div>-Load type is: Reload(// No point writing to the cache on a reload, since we will just write over it again when we leave that page.)</div><div>-Load type is: Same( // user loads same URL again (but not reload button) // No point writing to the cache on a same load, since we will just write over it again when we leave that page.)</div><div>-Load type is: RedirectWithLockedBackForwardList(// Don't write to the cache if in the middle of a redirect, since we will want to store the final page we end up on.)</div><div>-Load type is: Replace(// No point writing to the cache on a replace, since we will just write over it again when we leave that page.)</div><div>-Load type is: ReloadFromOrigin(// No point writing to the cache on a replace, since we will just write over it again when we leave that page.)</div><div><br/></div></div>
+</div><div><br/></div><div>最终返回至函数：WebCore::PageCache::addIfCacheable 中，继续往下执行：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#2    0x000000010839369b in WebCore::PageCache::addIfCacheable(WebCore::HistoryItem&amp;, WebCore::Page*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:394</div><div><br/></div><div>...</div><div>    // 此句代码，必然是把当前已经展示的页面设置入PageCache</div><div><div>    // Make sure all the documents know they are being added to the PageCache.</div><div>    setInPageCache(*page, true);</div></div><div>...</div><div><br/></div><div>#1    0x0000000108393ab5 in WebCore::setInPageCache(WebCore::Page&amp;, bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:363</div><div><br/></div><div><div>static void setInPageCache(Page&amp; page, bool isInPageCache)</div><div>{</div><div>    for (Frame* frame = &amp;page.mainFrame(); frame; frame = frame-&gt;tree().traverseNext()) {</div></div><div>        if (auto* document = frame-&gt;document())</div><div>            // 最后会调入此函数</div><div><div>            document-&gt;setInPageCache(isInPageCache);</div><div>    }</div></div><div>}</div><div><br/></div><div>来看 document 的 setInPageCache 函数：</div><div><br/></div><div>#0    0x0000000107027b37 in WebCore::Document::setInPageCache(bool) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:4617</div><div><br/></div><div><div>void Document::setInPageCache(bool flag)</div><div>{</div><div>    if (m_inPageCache == flag)</div><div>        return;</div></div><div><br/></div><div>    // this    WebCore::HTMLDocument *    0x1165d2200    0x00000001165d2200</div><div>    // flag    bool    true</div><div>    // v    WebCore::FrameView *    0x115f72600    0x0000000115f72600</div><div>    // page    WebCore::Page *    0x115ff8000    0x0000000115ff8000</div><div>    // 设置自己的缓存状态</div><div>    m_inPageCache = flag;</div><div>    // 获取 FrameView</div><div><div>    FrameView* v = view();</div><div>    Page* page = this-&gt;page();</div><div><br/></div></div><div>    if (flag) {</div><div>        // 如果存在 FrameView 则必然当前页面已经是可展示状态，则要缓存此页面做准备</div><div><div>        if (v) {</div><div>            // FIXME: There is some scrolling related work that needs to happen whenever a page goes into the</div><div>            // page cache and similar work that needs to occur when it comes out. This is where we do the work</div><div>            // that needs to happen when we enter, and the work that needs to happen when we exit is in</div><div>            // HistoryController::restoreScrollPositionAndViewState(). It can't be here because this function is</div><div>            // called too early on in the process of a page exiting the cache for that work to be possible in this</div><div>            // function. It would be nice if there was more symmetry here.</div></div><div>            // <a href="https://bugs.webkit.org/show_bug.cgi?id=98698">https://bugs.webkit.org/show_bug.cgi?id=98698</a></div><div>            // 记录当前页面的scroll值</div><div>            // 下面还有一些列的重置工作，不再深究，仅作记录</div><div><div>            v-&gt;cacheCurrentScrollPosition();</div><div>            if (page &amp;&amp; m_frame-&gt;isMainFrame()) {</div><div>                v-&gt;resetScrollbarsAndClearContentsSize();</div><div>                if (ScrollingCoordinator* scrollingCoordinator = page-&gt;scrollingCoordinator())</div><div>                    scrollingCoordinator-&gt;clearStateTree();</div><div>            } else</div><div>                v-&gt;resetScrollbars();</div><div>        }</div><div>        m_styleRecalcTimer.stop();</div><div><br/></div><div>        clearStyleResolver();</div><div>        clearSelectorQueryCache();</div><div>        clearSharedObjectPool();</div><div>    } else {</div><div>        if (childNeedsStyleRecalc())</div><div>            scheduleStyleRecalc();</div><div>    }</div><div>}</div></div></div><div><br/></div><div>addIfCacheable 的最后：</div><div><span style="color: rgb(51, 51, 51);"><span style="font-family: Monaco, Menlo, Consolas, 'Courier New', monospace;"><span style="font-size: 12px;"><br/></span></span></span></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>    ...</div><div>    // item    WebCore::HistoryItem &amp;    0x0000000121ead898 // 当前的页面历史记录</div><div>    // 设置当前的CachedPage</div><div>    item.m_cachedPage = std::make_unique&lt;CachedPage&gt;(*page);</div><div>    item.m_pruningReason = PruningReason::None;</div><div>    // m_items    WTF::ListHashSet&lt;WTF::RefPtr&lt;WebCore::HistoryItem&gt;, WTF::PtrHash&lt;WTF::RefPtr&lt;WebCore::HistoryItem&gt; &gt; &gt;   </div><div>    m_items.add(&amp;item);</div><div>    // 此函数分析见下：</div><div>    prune(PruningReason::ReachedMaxSize);</div><div>}</div><div><br/></div><div>...</div><div><br/></div><div>#0    0x00000001083930ab in WebCore::PageCache::prune(WebCore::PruningReason) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/history/PageCache.cpp:471</div><div><br/></div><div>void PageCache::prune(PruningReason pruningReason)</div><div>{</div><div>    // (lldb) print pageCount()  (unsigned int) $96 = 3 // 当前已有的历史记录数量</div><div>    // (lldb) print maxSize()  (unsigned int) $97 = 2  // 允许的最大值</div><div>    // 明显现在超过</div><div>    while (pageCount() &gt; maxSize()) {</div><div>        // 拿到第一个</div><div>        auto oldestItem = m_items.takeFirst();</div><div>        oldestItem-&gt;m_cachedPage = nullptr; // 销毁</div><div><div>        oldestItem-&gt;m_pruningReason = pruningReason;</div><div>    }</div><div>}</div></div></div><div><br/></div><div>分析导致里，PageCache 的处理步骤大致明了：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>    if (!m_frame.tree().parent() &amp;&amp; history().currentItem()) {</div><div>        // Check to see if we need to cache the page we are navigating away from into the back/forward cache.</div><div>        // We are doing this here because we know for sure that a new page is about to be loaded.</div></div><div>        PageCache::singleton().addIfCacheable(*history().currentItem(), m_frame.page());</div></div><div><br/></div><div>上述函数调用，通过综合判断当前frame中页面的各种情况，来判断其是不是符合归入PageCache的条件，一旦符合条件，就会把它放入由HistoryItem管理的PageCache中，同时每放入一个cache，都会进行cache列表的“修剪”操作，如果超出最大值数量，会把最早放入队列中的cache删除掉。</div><div><br/></div><div>再往后，会调用：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001073e4a1a in WebCore::FrameLoader::transitionToCommitted(WebCore::CachedPage*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1941</div><div><br/></div><div>...</div><div>    // this    WebCore::FrameLoader *    0x1153dfca0    0x00000001153dfca0</div><div>    setState(FrameStateCommittedPage);</div><div>...</div><div><br/></div><div><div>namespace WebCore {</div><div><br/></div><div>    enum FrameState {</div></div><div>        FrameStateProvisional,</div><div>        // 设置成自身的状态</div><div><div>        // This state indicates we are ready to commit to a page,</div><div>        // which means the view will transition to use the new data source.</div><div>        FrameStateCommittedPage,</div><div>        FrameStateComplete</div></div><div>    };</div><div>...</div></div><div> </div><div><br/></div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

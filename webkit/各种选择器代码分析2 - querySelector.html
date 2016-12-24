@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-31 06:09:50 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-11-01 07:07:44 +0000"/><title>各种选择器代码分析2 - querySelector</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-10-31 06:09:50 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:41:49 +0000"/><title>各种选择器代码分析2 - querySelector</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,176 +11,16 @@
 <h2>各种选择器代码分析2 - querySelector</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div>先分析 document.querySelector 函数（测试用例还是上节的函数）：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<hr/></div>
-<div>★ 接口层的入口函数：</div>
-<div>#0    0x0000000107a97cea in WebCore::jsDocumentPrototypeFunctionQuerySelector(JSC::ExecState*) at /Users/mrguan/work/svn/Webkit/WebKit/WebKitBuild/Debug/DerivedSources/WebCore/JSDocument.cpp:4862</div>
-<div>
-<div>EncodedJSValue JSC_HOST_CALL jsDocumentPrototypeFunctionQuerySelector(ExecState* state)</div>
-</div>
-<div>{</div>
-<div>    // 上半部分基本上都一样</div>
-<div>
-<div>    JSValue thisValue = state-&gt;thisValue();</div>
-<div>    auto castedThis = jsDocumentCast(thisValue);</div>
-<div>    if (UNLIKELY(!castedThis))</div>
-<div>        return throwThisTypeError(*state, "Document", "querySelector");</div>
-<div>    ASSERT_GC_OBJECT_INHERITS(castedThis, JSDocument::info());</div>
-<div>    auto&amp; impl = castedThis-&gt;wrapped();</div>
-<div>    if (UNLIKELY(state-&gt;argumentCount() &lt; 1))</div>
-<div>        return throwVMError(state, createNotEnoughArgumentsError(state));</div>
-<div>    ExceptionCode ec = 0;</div>
-<div>    auto selectors = state-&gt;argument(0).toWTFString(state);</div>
-<div>    if (UNLIKELY(state-&gt;hadException()))</div>
-<div>        return JSValue::encode(jsUndefined());</div>
-<div>    JSValue result = toJS(state, castedThis-&gt;globalObject(), WTF::getPtr(impl.querySelector(WTFMove(selectors), ec)));</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div/><div>★ 接口层的入口函数：</div><div>#0    0x0000000107a97cea in WebCore::jsDocumentPrototypeFunctionQuerySelector(JSC::ExecState*) at /Users/mrguan/work/svn/Webkit/WebKit/WebKitBuild/Debug/DerivedSources/WebCore/JSDocument.cpp:4862</div><div>EncodedJSValue JSC_HOST_CALL jsDocumentPrototypeFunctionQuerySelector(ExecState* state)</div><div>{</div><div>    // 上半部分基本上都一样</div><div><div>    JSValue thisValue = state-&gt;thisValue();</div><div>    auto castedThis = jsDocumentCast(thisValue);</div><div>    if (UNLIKELY(!castedThis))</div><div>        return throwThisTypeError(*state, "Document", "querySelector");</div><div>    ASSERT_GC_OBJECT_INHERITS(castedThis, JSDocument::info());</div><div>    auto&amp; impl = castedThis-&gt;wrapped();</div><div>    if (UNLIKELY(state-&gt;argumentCount() &lt; 1))</div><div>        return throwVMError(state, createNotEnoughArgumentsError(state));</div><div>    ExceptionCode ec = 0;</div><div>    auto selectors = state-&gt;argument(0).toWTFString(state);</div><div>    if (UNLIKELY(state-&gt;hadException()))</div><div>        return JSValue::encode(jsUndefined());</div><div>    JSValue result = toJS(state, castedThis-&gt;globalObject(), WTF::getPtr(impl.querySelector(WTFMove(selectors), ec)));</div><div><br/></div><div>    setDOMException(state, ec);</div><div>    return JSValue::encode(result);</div><div>}</div></div><div>===</div><div>★ 进入实现层：</div><div>#0    0x0000000106cd3dd8 in WebCore::ContainerNode::querySelector(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/ContainerNode.cpp:824</div><div>Element* ContainerNode::querySelector(const String&amp; selectors, ExceptionCode&amp; ec)</div><div>{</div><div>    // 首先获取 selectorQuery 对象【此对象会被缓存起来】初始化 selector 选择器对象</div><div><div>    if (SelectorQuery* selectorQuery = document().selectorQueryForString(selectors, ec))</div><div>        return selectorQuery-&gt;queryFirst(*this);</div><div>    return nullptr;</div><div>}</div></div><div>===</div><div>★ 首先进入：document().selectorQueryForString 函数：</div><div>#0    0x0000000107013587 in WebCore::Document::selectorQueryForString(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:787</div><div>SelectorQuery* Document::selectorQueryForString(const String&amp; selectorString, ExceptionCode&amp; ec)</div><div>{</div><div>    // this    WebCore::HTMLDocument *    0x116597400    0x0000000116597400</div><div>    // selectorString    const WTF::String &amp;    0x00007fff5fbfaca8</div><div>    // m_data8    const LChar *    ".testquery .innertestquery span,0)"    0x00000001209916a4</div><div>    // 判断是不是选择器字符串为空</div><div><div>    if (selectorString.isEmpty()) {</div><div>        ec = SYNTAX_ERR;</div><div>        return nullptr;</div></div><div>    }</div><div>    // 初始化一个缓存列表</div><div>    if (!m_selectorQueryCache)</div><div>        m_selectorQueryCache = std::make_unique&lt;SelectorQueryCache&gt;();</div><div>    // 进入add函数</div><div>    return m_selectorQueryCache-&gt;add(selectorString, *this, ec);</div><div>}</div><div>---</div><div>// 可以看到其内部仍旧维护着一个HashMap</div><div><div>class SelectorQueryCache {</div><div>    WTF_MAKE_FAST_ALLOCATED;</div><div><br/></div><div>public:</div><div>    SelectorQuery* add(const String&amp;, Document&amp;, ExceptionCode&amp;);</div><div><br/></div><div>private:</div><div>    HashMap&lt;String, std::unique_ptr&lt;SelectorQuery&gt;&gt; m_entries;</div><div>};</div></div><div>---</div><div>===</div><div>★ 调用selectorQueryCache的add函数：</div><div>#0    0x0000000108985250 in WebCore::SelectorQueryCache::add(WTF::String const&amp;, WebCore::Document&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:613</div><div>SelectorQuery* SelectorQueryCache::add(const String&amp; selectors, Document&amp; document, ExceptionCode&amp; ec)</div><div>{</div><div>    // 首先从自身的HashMap缓存中寻值，若没找到则此段代码跳过继续往下执行</div><div><div>    auto it = m_entries.find(selectors);</div><div>    if (it != m_entries.end())</div></div><div>        return it-&gt;value.get();</div><div>    // 这里比较复杂，并没有深究，CSS的解析器采用的应该是：lex+yacc模式来定义，详细请看：【CSS查找相关细节在后续章节详细深究】</div><div>    // <a href="http://www.ibm.com/developerworks/cn/linux/sdk/lex/">http://www.ibm.com/developerworks/cn/linux/sdk/lex/</a></div><div><div>    CSSParser parser(document);</div><div>    CSSSelectorList selectorList;</div></div><div>    parser.parseSelector(selectors, selectorList);</div><div>    // 检查是不是语法正确</div><div><div>    if (!selectorList.first() || selectorList.hasInvalidSelector()) {</div><div>        ec = SYNTAX_ERR;</div><div>        return nullptr;</div><div>    }</div><div><br/></div><div>    // Throw a NAMESPACE_ERR if the selector includes any namespace prefixes.</div><div>    if (selectorList.selectorsNeedNamespaceResolution()) {</div><div>        ec = NAMESPACE_ERR;</div><div>        return nullptr;</div></div><div>    }</div><div>    </div><div>    // 此selector缓存的最大值</div><div>    const int maximumSelectorQueryCacheSize = 256;</div><div>    // 如果超出，则把最早的删除掉</div><div><div>    if (m_entries.size() == maximumSelectorQueryCacheSize)</div><div>        m_entries.remove(m_entries.begin());</div><div><br/></div><div>    return m_entries.add(selectors, std::make_unique&lt;SelectorQuery&gt;(WTFMove(selectorList))).iterator-&gt;value.get();</div><div>}</div></div><div>===</div><div>★ 继续：</div><div>#0    0x0000000106cd4e94 in WebCore::SelectorQuery::queryFirst(WebCore::ContainerNode&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.h:158</div><div><div>inline Element* SelectorQuery::queryFirst(ContainerNode&amp; rootNode) const</div><div>{</div><div>    return m_selectors.queryFirst(rootNode);</div><div>}</div></div><div>===</div><div>★ 继续：</div><div>#0    0x0000000108985058 in WebCore::SelectorDataList::queryFirst(WebCore::ContainerNode&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:184</div><div>Element* SelectorDataList::queryFirst(ContainerNode&amp; rootNode) const</div><div>{</div><div>    // this    const WebCore::SelectorDataList *    0x1154ace28    0x00000001154ace28</div><div>    // rootNode    WebCore::HTMLDocument &amp;    0x0000000116596200</div><div>    Element* result = nullptr;</div><div>    // selector执行</div><div><div>    execute&lt;SingleElementExtractorSelectorQueryTrait&gt;(rootNode, result);</div><div>    return result;</div><div>}</div></div><div>===</div><div>★ 选择其执行阶段：</div><div>#0    0x0000000108986bfe in void WebCore::SelectorDataList::execute&lt;WebCore::SingleElementExtractorSelectorQueryTrait&gt;(WebCore::ContainerNode&amp;, WebCore::SingleElementExtractorSelectorQueryTrait::OutputType&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:506</div><div>【后续继续分析】此处代码略复杂，等下一时间段来分析，这段时间分析吐了快。</div><div>===</div></div>
 <div><br/></div>
-<div>    setDOMException(state, ec);</div>
-<div>    return JSValue::encode(result);</div>
-<div>}</div>
-</div>
-<div>===</div>
-<div>★ 进入实现层：</div>
-<div>#0    0x0000000106cd3dd8 in WebCore::ContainerNode::querySelector(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/ContainerNode.cpp:824</div>
-<div>
-<div>Element* ContainerNode::querySelector(const String&amp; selectors, ExceptionCode&amp; ec)</div>
-</div>
-<div>{</div>
-<div>    // 首先获取 selectorQuery 对象【此对象会被缓存起来】初始化 selector 选择器对象</div>
-<div>
-<div>    if (SelectorQuery* selectorQuery = document().selectorQueryForString(selectors, ec))</div>
-<div>        return selectorQuery-&gt;queryFirst(*this);</div>
-<div>    return nullptr;</div>
-<div>}</div>
-</div>
-<div>===</div>
-<div>★ 首先进入：document().selectorQueryForString 函数：</div>
-<div>#0    0x0000000107013587 in WebCore::Document::selectorQueryForString(WTF::String const&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/Document.cpp:787</div>
-<div>
-<div>SelectorQuery* Document::selectorQueryForString(const String&amp; selectorString, ExceptionCode&amp; ec)</div>
-</div>
-<div>{</div>
-<div>    // this    WebCore::HTMLDocument *    0x116597400    0x0000000116597400</div>
-<div>    // selectorString    const WTF::String &amp;    0x00007fff5fbfaca8</div>
-<div>    // m_data8    const LChar *    ".testquery .innertestquery span,0)"    0x00000001209916a4</div>
-<div>    // 判断是不是选择器字符串为空</div>
-<div>
-<div>    if (selectorString.isEmpty()) {</div>
-<div>        ec = SYNTAX_ERR;</div>
-<div>        return nullptr;</div>
-</div>
-<div>    }</div>
-<div>    // 初始化一个缓存列表</div>
-<div>
-<div>    if (!m_selectorQueryCache)</div>
-</div>
-<div>        m_selectorQueryCache = std::make_unique&lt;SelectorQueryCache&gt;();</div>
-<div>    // 进入add函数</div>
-<div>
-<div>    return m_selectorQueryCache-&gt;add(selectorString, *this, ec);</div>
-</div>
-<div>}</div>
-<div>---</div>
-<div>// 可以看到其内部仍旧维护着一个HashMap</div>
-<div>
-<div>class SelectorQueryCache {</div>
-<div>    WTF_MAKE_FAST_ALLOCATED;</div>
-<div><br/></div>
-<div>public:</div>
-<div>    SelectorQuery* add(const String&amp;, Document&amp;, ExceptionCode&amp;);</div>
-<div><br/></div>
-<div>private:</div>
-<div>    HashMap&lt;String, std::unique_ptr&lt;SelectorQuery&gt;&gt; m_entries;</div>
-<div>};</div>
-</div>
-<div>---</div>
-<div>===</div>
-<div>★ 调用selectorQueryCache的add函数：</div>
-<div>#0    0x0000000108985250 in WebCore::SelectorQueryCache::add(WTF::String const&amp;, WebCore::Document&amp;, int&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:613</div>
-<div>
-<div>SelectorQuery* SelectorQueryCache::add(const String&amp; selectors, Document&amp; document, ExceptionCode&amp; ec)</div>
-</div>
-<div>{</div>
-<div>    // 首先从自身的HashMap缓存中寻值，若没找到则此段代码跳过继续往下执行</div>
-<div>
-<div>    auto it = m_entries.find(selectors);</div>
-<div>    if (it != m_entries.end())</div>
-</div>
-<div>        return it-&gt;value.get();</div>
-<div>    // 这里比较复杂，并没有深究，CSS的解析器采用的应该是：lex+yacc模式来定义，详细请看：【CSS查找相关细节在后续章节详细深究】</div>
-<div>    // <a href="http://www.ibm.com/developerworks/cn/linux/sdk/lex/">http://www.ibm.com/developerworks/cn/linux/sdk/lex/</a></div>
-<div>
-<div>    CSSParser parser(document);</div>
-<div>    CSSSelectorList selectorList;</div>
-</div>
-<div>    parser.parseSelector(selectors, selectorList);</div>
-<div>    // 检查是不是语法正确</div>
-<div>
-<div>    if (!selectorList.first() || selectorList.hasInvalidSelector()) {</div>
-<div>        ec = SYNTAX_ERR;</div>
-<div>        return nullptr;</div>
-<div>    }</div>
-<div><br/></div>
-<div>    // Throw a NAMESPACE_ERR if the selector includes any namespace prefixes.</div>
-<div>    if (selectorList.selectorsNeedNamespaceResolution()) {</div>
-<div>        ec = NAMESPACE_ERR;</div>
-<div>        return nullptr;</div>
-</div>
-<div>    }</div>
-<div>    </div>
-<div>    // 此selector缓存的最大值</div>
-<div>    const int maximumSelectorQueryCacheSize = 256;</div>
-<div>    // 如果超出，则把最早的删除掉</div>
-<div>
-<div>    if (m_entries.size() == maximumSelectorQueryCacheSize)</div>
-<div>        m_entries.remove(m_entries.begin());</div>
-<div><br/></div>
-<div>    return m_entries.add(selectors, std::make_unique&lt;SelectorQuery&gt;(WTFMove(selectorList))).iterator-&gt;value.get();</div>
-<div>}</div>
-</div>
-<div>===</div>
-<div>★ 继续：</div>
-<div>#0    0x0000000106cd4e94 in WebCore::SelectorQuery::queryFirst(WebCore::ContainerNode&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.h:158</div>
-<div>
-<div>inline Element* SelectorQuery::queryFirst(ContainerNode&amp; rootNode) const</div>
-<div>{</div>
-<div>    return m_selectors.queryFirst(rootNode);</div>
-<div>}</div>
-</div>
-<div>===</div>
-<div>★ 继续：</div>
-<div>#0    0x0000000108985058 in WebCore::SelectorDataList::queryFirst(WebCore::ContainerNode&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:184</div>
-<div>
-<div>Element* SelectorDataList::queryFirst(ContainerNode&amp; rootNode) const</div>
-</div>
-<div>{</div>
-<div>    // this    const WebCore::SelectorDataList *    0x1154ace28    0x00000001154ace28</div>
-<div>    // rootNode    WebCore::HTMLDocument &amp;    0x0000000116596200</div>
-<div>    Element* result = nullptr;</div>
-<div>    // selector执行</div>
-<div>
-<div>    execute&lt;SingleElementExtractorSelectorQueryTrait&gt;(rootNode, result);</div>
-<div>    return result;</div>
-<div>}</div>
-</div>
-<div>===</div>
-<div>★ 选择其执行阶段：</div>
-<div>#0    0x0000000108986bfe in void WebCore::SelectorDataList::execute&lt;WebCore::SingleElementExtractorSelectorQueryTrait&gt;(WebCore::ContainerNode&amp;, WebCore::SingleElementExtractorSelectorQueryTrait::OutputType&amp;) const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/dom/SelectorQuery.cpp:506</div>
-<div>【后续继续分析】此处代码略复杂，等下一时间段来分析，这段时间分析吐了快。</div>
-<div>===</div>
-</div>
-<div><br/></div>
-</div>
-
+</div><div><br/></div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

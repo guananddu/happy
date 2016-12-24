@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-13 07:04:48 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-09-15 14:22:51 +0000"/><title>资源加载流程1-3 - HTML 文档资源</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-09-13 07:04:48 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:16:15 +0000"/><title>资源加载流程1-3 - HTML 文档资源</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -11,453 +11,47 @@
 <h2>资源加载流程1-3 - HTML 文档资源</h2>
 <p class="title-p">版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<hr class="title-hr">
-<div>
+<hr class="title-hr"><div>
 <div>接上节：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001073e7219 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1405</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001073e7219 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1405</div></div>
 <div><br/></div>
 <div>来看一下漂亮的函数体：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void FrameLoader::loadWithDocumentLoader(DocumentLoader* loader, FrameLoadType type, PassRefPtr&lt;FormState&gt; prpFormState, AllowNavigationToInvalidURL allowNavigationToInvalidURL)</div>
-</div>
-<div>{</div>
-<div>    // 上下文：</div>
-<div>    // this    WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div>
-<div>    // loader    WebDocumentLoaderMac *    0x1165f3100    0x00000001165f3100</div>
-<div>    // allowNavigationToInvalidURL    WebCore::AllowNavigationToInvalidURL    Yes</div>
-<div>    // type    WebCore::FrameLoadType    Standard</div>
-<div>    // prpFormState    WTF::PassRefPtr&lt;WebCore::FormState&gt;  </div>
-<div>    // protect    WTF::Ref&lt;WebCore::Frame&gt;    </div>
-<div>    // m_frame    WebCore::MainFrame &amp;    0x00000001155dfc00</div>
-<div>    // <a href="https://webkit.org/blog/5381/refptr-basics/">https://webkit.org/blog/5381/refptr-basics/</a></div>
-<div>    // Ref 在构造之初会进行 retain 操作，参看上面的链接 </div>
-<div>    // m_client    WebFrameLoaderClient &amp;    0x0000608000029940</div>
-<div>
-<div>    // Retain because dispatchBeforeLoadEvent may release the last reference to it.</div>
-<div>    Ref&lt;Frame&gt; protect(m_frame);</div>
-</div>
-<div><br/></div>
-<div>    // m_client    WebFrameLoaderClient &amp;    0x0000608000029940</div>
-<div>
-<div>    ASSERT(m_client.hasWebView());</div>
-<div><br/></div>
-<div>    // Unfortunately the view must be non-nil, this is ultimately due</div>
-<div>    // to parser requiring a FrameView.  We should fix this dependency.</div>
-<div><br/></div>
-</div>
-<div>    ASSERT(m_frame.view());</div>
-<div>    // m_pageDismissalEventBeingDispatched    WebCore::FrameLoader::PageDismissalType    None</div>
-<div>    // 摘出：enum class PageDismissalType { None, BeforeUnload, PageHide, Unload };</div>
-<div>
-<div>    if (m_pageDismissalEventBeingDispatched != PageDismissalType::None)</div>
-</div>
-<div>        return;</div>
-<div>    // 获取之前已经加载的页面（历史），现在要跳转至：xxx?000010</div>
-<div>    // m_previousURL    WebCore::URL  </div>
-<div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014 </div>
-<div>
-<div>    if (m_frame.document())</div>
-<div>        m_previousURL = m_frame.document()-&gt;url();</div>
-</div>
-<div><br/></div>
-<div>    // Log main frame navigation types.简单测试页面，只有一个window</div>
-<div>    if (m_frame.isMainFrame())</div>
-<div>        // 日志记录</div>
-<div>        logNavigation(static_cast&lt;MainFrame&amp;&gt;(m_frame), type);</div>
-<div>    // m_policyChecker    WebCore::PolicyChecker *    0x1155c0000 0x00000001155c0000</div>
-<div>    // loadType    WebCore::FrameLoadType    Standard</div>
-<div>
-<div>    policyChecker().setLoadType(type);</div>
-</div>
-<div>    RefPtr&lt;FormState&gt; formState = prpFormState;</div>
-<div>    // 猜测这里应该是表单提交相关标识，初次排查：</div>
-<div>    // isFormSubmission    bool    false</div>
-<div>    bool isFormSubmission = formState;</div>
-<div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div>
-<div>    const URL&amp; newURL = loader-&gt;request().url();</div>
-<div>    // m_data8    const LChar *    "GET"    0x00000001154afc2c</div>
-<div>
-<div>    const String&amp; httpMethod = loader-&gt;request().httpMethod();</div>
-</div>
-<div><br/></div>
-<div>    // 见下述分析，从 http://localhost:8111/sample.html?00007 -&gt; xxxxxxx?sample.html?000010 并没有带上 fragment，所以返回 false</div>
-<div>    // TODO: 具体情况具体分析</div>
-<div>
-<div>    if (shouldPerformFragmentNavigation(isFormSubmission, httpMethod, policyChecker().loadType(), newURL)) {</div>
-<div>        RefPtr&lt;DocumentLoader&gt; oldDocumentLoader = m_documentLoader;</div>
-<div>        NavigationAction action(loader-&gt;request(), policyChecker().loadType(), isFormSubmission);</div>
-<div><br/></div>
-<div>        oldDocumentLoader-&gt;setTriggeringAction(action);</div>
-<div>        oldDocumentLoader-&gt;setLastCheckedRequest(ResourceRequest());</div>
-<div>        policyChecker().stopCheck();</div>
-<div>        policyChecker().checkNavigationPolicy(loader-&gt;request(), false /* didReceiveRedirectResponse */, oldDocumentLoader.get(), formState, [this](const ResourceRequest&amp; request, PassRefPtr&lt;FormState&gt;, bool shouldContinue) {</div>
-<div>            continueFragmentScrollAfterNavigationPolicy(request, shouldContinue);</div>
-<div>        });</div>
-<div>        return;</div>
-<div>    }</div>
-</div>
-<div>     </div>
-<div>    // m_frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div>
-<div>    // 此句判断当前的 frame 是不是存在一个父级的 frame；测试用例只是简单的一个页面</div>
-<div>
-<div>    if (Frame* parent = m_frame.tree().parent())</div>
-</div>
-<div>        loader-&gt;setOverrideEncoding(parent-&gt;loader().documentLoader()-&gt;overrideEncoding());</div>
-<div>    // 见下述分析</div>
-<div>    policyChecker().stopCheck();</div>
-<div>    // loader    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div>
-<div>    // m_policyDocumentLoader    WTF::RefPtr&lt;WebCore::DocumentLoader&gt;  </div>
-<div>    // 见下分析 </div>
-<div>    setPolicyDocumentLoader(loader);</div>
-<div>    // loader-&gt;triggeringAction() 返回 loader 自身的：</div>
-<div>    // m_triggeringAction    WebCore::NavigationAction   属性</div>
-<div>    // 关于 NavigationAction::isEmpty() 的解释见下，这里返回 isEmpty() === true</div>
-<div>    if (loader-&gt;triggeringAction().isEmpty())</div>
-<div>        // 见下分析</div>
-<div>        loader-&gt;setTriggeringAction(NavigationAction(loader-&gt;request(), policyChecker().loadType(), isFormSubmission));</div>
-<div>    // 正常加载这里跳过了</div>
-<div>
-<div>    if (Element* ownerElement = m_frame.ownerElement()) {</div>
-<div>        // We skip dispatching the beforeload event if we've already</div>
-<div>        // committed a real document load because the event would leak</div>
-<div>        // subsequent activity by the frame which the parent frame isn't</div>
-<div>        // supposed to learn. For example, if the child frame navigated to</div>
-<div>        // a new URL, the parent frame shouldn't learn the URL.</div>
-<div>        if (!m_stateMachine.committedFirstRealDocumentLoad()</div>
-<div>            &amp;&amp; !ownerElement-&gt;dispatchBeforeLoadEvent(loader-&gt;request().url().string())) {</div>
-<div>            continueLoadAfterNavigationPolicy(loader-&gt;request(), formState, false, allowNavigationToInvalidURL);</div>
-<div>            return;</div>
-<div>        }</div>
-<div>    }</div>
-<div><br/></div>
-<div>    policyChecker().checkNavigationPolicy(loader-&gt;request(), false /* didReceiveRedirectResponse */, loader, formState, [this, allowNavigationToInvalidURL](const ResourceRequest&amp; request, PassRefPtr&lt;FormState&gt; formState, bool shouldContinue) {</div>
-<div>        continueLoadAfterNavigationPolicy(request, formState, shouldContinue, allowNavigationToInvalidURL);</div>
-<div>    });</div>
-<div>}</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>void FrameLoader::loadWithDocumentLoader(DocumentLoader* loader, FrameLoadType type, PassRefPtr&lt;FormState&gt; prpFormState, AllowNavigationToInvalidURL allowNavigationToInvalidURL)</div><div>{</div><div>    // 上下文：</div><div>    // this    WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div><div>    // loader    WebDocumentLoaderMac *    0x1165f3100    0x00000001165f3100</div><div>    // allowNavigationToInvalidURL    WebCore::AllowNavigationToInvalidURL    Yes</div><div>    // type    WebCore::FrameLoadType    Standard</div><div>    // prpFormState    WTF::PassRefPtr&lt;WebCore::FormState&gt;  </div><div>    // protect    WTF::Ref&lt;WebCore::Frame&gt;    </div><div>    // m_frame    WebCore::MainFrame &amp;    0x00000001155dfc00</div><div>    // <a href="https://webkit.org/blog/5381/refptr-basics/">https://webkit.org/blog/5381/refptr-basics/</a></div><div>    // Ref 在构造之初会进行 retain 操作，参看上面的链接 </div><div>    // m_client    WebFrameLoaderClient &amp;    0x0000608000029940</div><div><div>    // Retain because dispatchBeforeLoadEvent may release the last reference to it.</div><div>    Ref&lt;Frame&gt; protect(m_frame);</div></div><div><br/></div><div>    // m_client    WebFrameLoaderClient &amp;    0x0000608000029940</div><div><div>    ASSERT(m_client.hasWebView());</div><div><br/></div><div>    // Unfortunately the view must be non-nil, this is ultimately due</div><div>    // to parser requiring a FrameView.  We should fix this dependency.</div><div><br/></div></div><div>    ASSERT(m_frame.view());</div><div>    // m_pageDismissalEventBeingDispatched    WebCore::FrameLoader::PageDismissalType    None</div><div>    // 摘出：enum class PageDismissalType { None, BeforeUnload, PageHide, Unload };</div><div>    if (m_pageDismissalEventBeingDispatched != PageDismissalType::None)</div><div>        return;</div><div>    // 获取之前已经加载的页面（历史），现在要跳转至：xxx?000010</div><div>    // m_previousURL    WebCore::URL  </div><div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014 </div><div><div>    if (m_frame.document())</div><div>        m_previousURL = m_frame.document()-&gt;url();</div></div><div><br/></div><div>    // Log main frame navigation types.简单测试页面，只有一个window</div><div>    if (m_frame.isMainFrame())</div><div>        // 日志记录</div><div>        logNavigation(static_cast&lt;MainFrame&amp;&gt;(m_frame), type);</div><div>    // m_policyChecker    WebCore::PolicyChecker *    0x1155c0000 0x00000001155c0000</div><div>    // loadType    WebCore::FrameLoadType    Standard</div><div>    policyChecker().setLoadType(type);</div><div>    RefPtr&lt;FormState&gt; formState = prpFormState;</div><div>    // 猜测这里应该是表单提交相关标识，初次排查：</div><div>    // isFormSubmission    bool    false</div><div>    bool isFormSubmission = formState;</div><div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div><div>    const URL&amp; newURL = loader-&gt;request().url();</div><div>    // m_data8    const LChar *    "GET"    0x00000001154afc2c</div><div>    const String&amp; httpMethod = loader-&gt;request().httpMethod();</div><div><br/></div><div>    // 见下述分析，从 http://localhost:8111/sample.html?00007 -&gt; xxxxxxx?sample.html?000010 并没有带上 fragment，所以返回 false</div><div>    // TODO: 具体情况具体分析</div><div><div>    if (shouldPerformFragmentNavigation(isFormSubmission, httpMethod, policyChecker().loadType(), newURL)) {</div><div>        RefPtr&lt;DocumentLoader&gt; oldDocumentLoader = m_documentLoader;</div><div>        NavigationAction action(loader-&gt;request(), policyChecker().loadType(), isFormSubmission);</div><div><br/></div><div>        oldDocumentLoader-&gt;setTriggeringAction(action);</div><div>        oldDocumentLoader-&gt;setLastCheckedRequest(ResourceRequest());</div><div>        policyChecker().stopCheck();</div><div>        policyChecker().checkNavigationPolicy(loader-&gt;request(), false /* didReceiveRedirectResponse */, oldDocumentLoader.get(), formState, [this](const ResourceRequest&amp; request, PassRefPtr&lt;FormState&gt;, bool shouldContinue) {</div><div>            continueFragmentScrollAfterNavigationPolicy(request, shouldContinue);</div><div>        });</div><div>        return;</div><div>    }</div></div><div>     </div><div>    // m_frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div><div>    // 此句判断当前的 frame 是不是存在一个父级的 frame；测试用例只是简单的一个页面</div><div>    if (Frame* parent = m_frame.tree().parent())</div><div>        loader-&gt;setOverrideEncoding(parent-&gt;loader().documentLoader()-&gt;overrideEncoding());</div><div>    // 见下述分析</div><div>    policyChecker().stopCheck();</div><div>    // loader    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div><div>    // m_policyDocumentLoader    WTF::RefPtr&lt;WebCore::DocumentLoader&gt;  </div><div>    // 见下分析 </div><div>    setPolicyDocumentLoader(loader);</div><div>    // loader-&gt;triggeringAction() 返回 loader 自身的：</div><div>    // m_triggeringAction    WebCore::NavigationAction   属性</div><div>    // 关于 NavigationAction::isEmpty() 的解释见下，这里返回 isEmpty() === true</div><div>    if (loader-&gt;triggeringAction().isEmpty())</div><div>        // 见下分析</div><div>        loader-&gt;setTriggeringAction(NavigationAction(loader-&gt;request(), policyChecker().loadType(), isFormSubmission));</div><div>    // 正常加载这里跳过了</div><div><div>    if (Element* ownerElement = m_frame.ownerElement()) {</div><div>        // We skip dispatching the beforeload event if we've already</div><div>        // committed a real document load because the event would leak</div><div>        // subsequent activity by the frame which the parent frame isn't</div><div>        // supposed to learn. For example, if the child frame navigated to</div><div>        // a new URL, the parent frame shouldn't learn the URL.</div><div>        if (!m_stateMachine.committedFirstRealDocumentLoad()</div><div>            &amp;&amp; !ownerElement-&gt;dispatchBeforeLoadEvent(loader-&gt;request().url().string())) {</div><div>            continueLoadAfterNavigationPolicy(loader-&gt;request(), formState, false, allowNavigationToInvalidURL);</div><div>            return;</div><div>        }</div><div>    }</div><div><br/></div><div>    policyChecker().checkNavigationPolicy(loader-&gt;request(), false /* didReceiveRedirectResponse */, loader, formState, [this, allowNavigationToInvalidURL](const ResourceRequest&amp; request, PassRefPtr&lt;FormState&gt; formState, bool shouldContinue) {</div><div>        continueLoadAfterNavigationPolicy(request, formState, shouldContinue, allowNavigationToInvalidURL);</div><div>    });</div><div>}</div></div></div>
 <div><br/></div>
 <div>
 <hr/></div>
-<div>★WebCore::FrameLoader::shouldPerformFragmentNavigation 的作用分析</div>
+<div><br/></div><div>★WebCore::FrameLoader::shouldPerformFragmentNavigation 的作用分析</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#1    0x00000001073e7459 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1431</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#1    0x00000001073e7459 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1431</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001073e6603 in WebCore::FrameLoader::shouldPerformFragmentNavigation(bool, WTF::String const&amp;, WebCore::FrameLoadType, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2811</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001073e6603 in WebCore::FrameLoader::shouldPerformFragmentNavigation(bool, WTF::String const&amp;, WebCore::FrameLoadType, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2811</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>bool FrameLoader::shouldPerformFragmentNavigation(bool isFormSubmission, const String&amp; httpMethod, FrameLoadType loadType, const URL&amp; url)</div>
-</div>
-<div>{</div>
-<div>    // this    WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div>
-<div>    // isFormSubmission    bool    false</div>
-<div>    // loadType    WebCore::FrameLoadType    Standard</div>
-<div>    // httpMethod    const WTF::String &amp;    0x00000001165f3648</div>
-<div>    // m_data8    const LChar *    "GET"    0x00000001154afc2c</div>
-<div>    // url    const WebCore::URL &amp;    0x00000001165f35d0</div>
-<div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div>
-<div>
-<div>    // We don't do this if we are submitting a form with method other than "GET", explicitly reloading,</div>
-<div>    // currently displaying a frameset, or if the URL does not have a fragment.</div>
-</div>
-<div>    // These rules were originally based on what KHTML was doing in KHTMLPart::openURL.</div>
-<div>    // 翻译：此函数在以下情况下返回 false：</div>
-<div>    // 如果正在使用 GET 之外的方法提交表单；一个明确的重载页面；页面是一个 iframe?；URL 中没有 fragment;</div>
-<div>
-<div>    // FIXME: What about load types other than Standard and Reload?</div>
-<div><br/></div>
-<div>    return (!isFormSubmission || equalLettersIgnoringASCIICase(httpMethod, "get"))</div>
-<div>        &amp;&amp; loadType != FrameLoadType::Reload</div>
-<div>        &amp;&amp; loadType != FrameLoadType::ReloadFromOrigin</div>
-</div>
-<div>        &amp;&amp; loadType != FrameLoadType::Same</div>
-<div>        // 因为此次跳转的目标 URL 并没有 fragment 字段，所以下面的语句</div>
-<div>
-<div>        &amp;&amp; !shouldReload(m_frame.document()-&gt;url(), url)</div>
-<div>        // We don't want to just scroll if a link from within a</div>
-<div>        // frameset is trying to reload the frameset into _top.</div>
-<div>        &amp;&amp; !m_frame.document()-&gt;isFrameSet();</div>
-</div>
-<div>}</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>bool FrameLoader::shouldPerformFragmentNavigation(bool isFormSubmission, const String&amp; httpMethod, FrameLoadType loadType, const URL&amp; url)</div><div>{</div><div>    // this    WebCore::FrameLoader *    0x1155dfca0    0x00000001155dfca0</div><div>    // isFormSubmission    bool    false</div><div>    // loadType    WebCore::FrameLoadType    Standard</div><div>    // httpMethod    const WTF::String &amp;    0x00000001165f3648</div><div>    // m_data8    const LChar *    "GET"    0x00000001154afc2c</div><div>    // url    const WebCore::URL &amp;    0x00000001165f35d0</div><div>    // m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div><div><div>    // We don't do this if we are submitting a form with method other than "GET", explicitly reloading,</div><div>    // currently displaying a frameset, or if the URL does not have a fragment.</div></div><div>    // These rules were originally based on what KHTML was doing in KHTMLPart::openURL.</div><div>    // 翻译：此函数在以下情况下返回 false：</div><div>    // 如果正在使用 GET 之外的方法提交表单；一个明确的重载页面；页面是一个 iframe?；URL 中没有 fragment;</div><div><div>    // FIXME: What about load types other than Standard and Reload?</div><div><br/></div><div>    return (!isFormSubmission || equalLettersIgnoringASCIICase(httpMethod, "get"))</div><div>        &amp;&amp; loadType != FrameLoadType::Reload</div><div>        &amp;&amp; loadType != FrameLoadType::ReloadFromOrigin</div></div><div>        &amp;&amp; loadType != FrameLoadType::Same</div><div>        // 因为此次跳转的目标 URL 并没有 fragment 字段，所以下面的语句</div><div><div>        &amp;&amp; !shouldReload(m_frame.document()-&gt;url(), url)</div><div>        // We don't want to just scroll if a link from within a</div><div>        // frameset is trying to reload the frameset into _top.</div><div>        &amp;&amp; !m_frame.document()-&gt;isFrameSet();</div></div><div>}</div></div>
 <div><br/></div>
 <div>看一下这一堆判断语句中的：shouldReload 方法：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001073ebb04 in WebCore::FrameLoader::shouldReload(WebCore::URL const&amp;, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2042</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001073ebb04 in WebCore::FrameLoader::shouldReload(WebCore::URL const&amp;, WebCore::URL const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:2042</div></div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>bool FrameLoader::shouldReload(const URL&amp; currentURL, const URL&amp; destinationURL)</div>
-</div>
-<div>{</div>
-<div>    // destinationURL:m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div>
-<div>    // currentURL:m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014</div>
-<div>
-<div>    // This function implements the rule: "Don't reload if navigating by fragment within</div>
-<div>    // the same URL, but do reload if going to a new URL or to the same URL with no</div>
-<div>    // fragment identifier at all."</div>
-<div>    if (!destinationURL.hasFragmentIdentifier())</div>
-<div>        return true;</div>
-<div>    return !equalIgnoringFragmentIdentifier(currentURL, destinationURL);</div>
-</div>
-<div>}</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>bool FrameLoader::shouldReload(const URL&amp; currentURL, const URL&amp; destinationURL)</div><div>{</div><div>    // destinationURL:m_data8    const LChar *    "http://localhost:8111/sample.html?000010"    0x00000001154ae054</div><div>    // currentURL:m_data8    const LChar *    "http://localhost:8111/sample.html?00007"    0x000000011552a014</div><div><div>    // This function implements the rule: "Don't reload if navigating by fragment within</div><div>    // the same URL, but do reload if going to a new URL or to the same URL with no</div><div>    // fragment identifier at all."</div><div>    if (!destinationURL.hasFragmentIdentifier())</div><div>        return true;</div><div>    return !equalIgnoringFragmentIdentifier(currentURL, destinationURL);</div></div><div>}</div></div>
 <div><br/></div>
 <div>看一下对 destinationURL 的断点信息截图，而针对 hasFragmentIdentifier() 的函数判断语句为：</div>
 <div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>bool URL::hasFragmentIdentifier() const</div>
-</div>
-<div>{</div>
-<div>
-<div>    return m_fragmentEnd != m_queryEnd;</div>
-<div>}</div>
-</div>
-</div>
+<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>bool URL::hasFragmentIdentifier() const</div><div>{</div><div><div>    return m_fragmentEnd != m_queryEnd;</div><div>}</div></div></div>
 <div><br/></div>
 <div><br/></div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-3%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/C8EBF4F9-9521-443D-8CA1-BC6740605D6F.png" height="auto" width="100%"/></div>
-</div>
-<div>在此场景下，destinationURL 并没有 m_fragmentEnd 字段（即：window.location.hash ）</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>★WebCore::FrameLoader::policyChecker()</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001070a553c in WebCore::FrameLoader::policyChecker() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.h:101</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>PolicyChecker&amp; policyChecker() const { return *m_policyChecker; }</div>
-<div>// this    const WebCore::FrameLoader *    0x1161dfca0    0x00000001161dfca0</div>
-<div>// m_policyChecker    const std::__1::unique_ptr&lt;WebCore::PolicyChecker, std::__1::default_delete&lt;WebCore::PolicyChecker&gt; &gt;   </div>
-</div>
-<div><br/></div>
-<div>WebCore::FrameLoader 拥有自己的 policyChecker （姑且翻译成：策略检查器）</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>★policyChecker().stopCheck() 的作用：</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#2    0x00000001073e7679 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1447</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#1    0x000000010842a2c8 in WebCore::PolicyChecker::stopCheck() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/PolicyChecker.cpp:168</div>
-</div>
-<div><br/></div>
-<div>PolicyChecker::stopCheck 此函数的整体功能不算太了解，算是一个状态归位的操作吧</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void PolicyChecker::stopCheck()</div>
-</div>
-<div>{</div>
-<div>    // this    WebCore::PolicyChecker *    0x1161c0000    0x00000001161c0000</div>
-<div>    // m_callback    WebCore::PolicyCallback    </div>
-<div>    // 调至 WebFrameLoaderClient 的 cancelPolicyCheck 方法</div>
-<div>
-<div>    m_frame.loader().client().cancelPolicyCheck();</div>
-<div>    PolicyCallback callback = m_callback;</div>
-<div>    m_callback.clear();</div>
-<div>    callback.cancel();</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000102db4d80 in WebFrameLoaderClient::cancelPolicyCheck() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebKit/mac/WebCoreSupport/WebFrameLoaderClient.mm:924</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void WebFrameLoaderClient::cancelPolicyCheck()</div>
-<div>{</div>
-<div>    [m_policyListener invalidate];</div>
-<div>    m_policyListener = nullptr;</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>★WebCore::FrameLoader::setPolicyDocumentLoader(WebCore::DocumentLoader*)</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#2    0x00000001073e7689 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1448</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#1    0x00000001073dfba8 in WebCore::FrameLoader::setPolicyDocumentLoader(WebCore::DocumentLoader*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1704</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void FrameLoader::setPolicyDocumentLoader(DocumentLoader* loader)</div>
-</div>
-<div>{</div>
-<div>    // this    WebCore::FrameLoader *    0x1161dfca0    0x00000001161dfca0</div>
-<div>    // loader    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div>
-<div>    // m_policyDocumentLoader    WTF::RefPtr&lt;WebCore::DocumentLoader&gt;  </div>
-<div>    // 测试用例这里不是相同的 </div>
-<div>
-<div>    if (m_policyDocumentLoader == loader)</div>
-<div>        return;</div>
-<div><br/></div>
-</div>
-<div>    if (loader)</div>
-<div>        // m_frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div>
-<div>        // 看下这个函数，作用：将当前 loader 挂载至 frame，并且设置 DocumentWriter 的 frame</div>
-<div>
-<div>        loader-&gt;attachToFrame(m_frame);</div>
-<div>    if (m_policyDocumentLoader</div>
-<div>            &amp;&amp; m_policyDocumentLoader != m_provisionalDocumentLoader</div>
-<div>            &amp;&amp; m_policyDocumentLoader != m_documentLoader)</div>
-<div>        m_policyDocumentLoader-&gt;detachFromFrame();</div>
-</div>
-<div><br/></div>
-<div>    // 最终设置 policyDocumentLoader</div>
-<div>
-<div>    m_policyDocumentLoader = loader;</div>
-</div>
-<div>}</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x000000010709c944 in WebCore::DocumentLoader::attachToFrame(WebCore::Frame&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:981</div>
-</div>
-<div><br/></div>
-<div>WebDocumentLoaderMac 的 Debug 信息截图显示：</div>
-<div><br/></div>
-<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-3%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/3562AB0F-A6A8-44BE-8A8A-ACC0C0D74E3A.png" height="auto" width="100%"/></div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void DocumentLoader::attachToFrame(Frame&amp; frame)</div>
-</div>
-<div>{</div>
-<div>    // this    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div>
-<div>    // frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div>
-<div>    // 如果已经被 attachToFrame 则不需再 attach</div>
-<div>
-<div>    if (m_frame == &amp;frame)</div>
-<div>        return;</div>
-<div><br/></div>
-<div>    ASSERT(!m_frame);</div>
-</div>
-<div>    m_frame = &amp;frame;</div>
-<div>    // m_writer    WebCore::DocumentWriter  </div>
-<div>    // 摘：void setFrame(Frame* frame) { m_frame = frame; } </div>
-<div>    m_writer.setFrame(&amp;frame);</div>
-<div>    // 这个 attachToFrame 调用了 </div>
-<div>
-<div>    attachToFrame();</div>
-<div><br/></div>
-<div>#ifndef NDEBUG</div>
-<div>    m_hasEverBeenAttached = true;</div>
-<div>#endif</div>
-</div>
-<div>}</div>
-</div>
-<div><br/></div>
-<div>attachToFrame() 则调起 Objective-C 层级的 WebDocumentLoaderMac 的 attachToFrame 方法，再回归至 DocumentLoader::attachToFrame()</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000102d8b910 in WebDocumentLoaderMac::attachToFrame() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebKit/mac/WebView/WebDocumentLoaderMac.mm:79</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>void WebDocumentLoaderMac::attachToFrame()</div>
-<div>{</div>
-<div>    DocumentLoader::attachToFrame();</div>
-<div><br/></div>
-<div>    retainDataSource();</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>★NavigationAction::isEmpty()</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001073f9c50 in WebCore::NavigationAction::isEmpty() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/NavigationAction.h:58</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>bool isEmpty() const { return m_resourceRequest.url().isEmpty(); }</div>
-<div>// this    const WebCore::NavigationAction *    0x116df38e0    0x0000000116df38e0</div>
-<div>// m_resourceRequest    WebCore::ResourceRequest  </div>
-<div>// 初次的 isEmpty() 返回 true </div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x0000000108836782 in WebCore::ResourceRequestBase::url() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:124</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>
-<div>const URL&amp; ResourceRequestBase::url() const<br/></div>
-</div>
-<div>{</div>
-<div>    // this    const WebCore::ResourceRequestBase *    0x116df38e0    0x0000000116df38e0</div>
-<div>    // m_url    WebCore::URL  </div>
-<div>    // m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div>
-<div>
-<div>    updateResourceRequest();</div>
-<div><br/></div>
-<div>    return m_url;</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>
-<hr/></div>
-<div>★WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL)</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0  0x00000001073e76fa in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1450</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>#0    0x00000001070a0487 in WebCore::DocumentLoader::setTriggeringAction(WebCore::NavigationAction const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:1662</div>
-</div>
-<div><br/></div>
-<div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;">
-<div>// 给 DcoumentLoader 设置一个 NavigationAction -&gt; m_triggeringAction</div>
-<div>void DocumentLoader::setTriggeringAction(const NavigationAction&amp; action)</div>
-<div>{</div>
-<div>    // this    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div>
-<div>    // 入参：action    const WebCore::NavigationAction &amp;    0x00007fff5fbf8ff8</div>
-<div>    // 肯定会有 m_frame 所以进入 第一分支</div>
-<div>
-<div>    m_triggeringAction = action.copyWithShouldOpenExternalURLsPolicy(m_frame ? shouldOpenExternalURLsPolicyToPropagate() : m_shouldOpenExternalURLsPolicy);</div>
-<div>}</div>
-</div>
-</div>
-<div><br/></div>
-<div>接下节</div>
-
+<div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-3%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/C8EBF4F9-9521-443D-8CA1-BC6740605D6F.png" height="auto" width="100%"/><br/></div>
+</div><div><br/></div><div>在此场景下，destinationURL 并没有 m_fragmentEnd 字段（即：window.location.hash ）</div><div><br/></div><div>
+<hr/></div><div><br/></div><div>★WebCore::FrameLoader::policyChecker()</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001070a553c in WebCore::FrameLoader::policyChecker() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.h:101</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>PolicyChecker&amp; policyChecker() const { return *m_policyChecker; }</div><div>// this    const WebCore::FrameLoader *    0x1161dfca0    0x00000001161dfca0</div><div>// m_policyChecker    const std::__1::unique_ptr&lt;WebCore::PolicyChecker, std::__1::default_delete&lt;WebCore::PolicyChecker&gt; &gt;   </div></div><div><br/></div><div>WebCore::FrameLoader 拥有自己的 policyChecker （姑且翻译成：策略检查器）</div><div><br/></div><div>
+<hr/></div><div><br/></div><div>★policyChecker().stopCheck() 的作用：</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#2    0x00000001073e7679 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1447</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#1    0x000000010842a2c8 in WebCore::PolicyChecker::stopCheck() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/PolicyChecker.cpp:168</div></div><div><br/></div><div>PolicyChecker::stopCheck 此函数的整体功能不算太了解，算是一个状态归位的操作吧</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>void PolicyChecker::stopCheck()</div><div>{</div><div>    // this    WebCore::PolicyChecker *    0x1161c0000    0x00000001161c0000</div><div>    // m_callback    WebCore::PolicyCallback    </div><div>    // 调至 WebFrameLoaderClient 的 cancelPolicyCheck 方法</div><div><div>    m_frame.loader().client().cancelPolicyCheck();</div><div>    PolicyCallback callback = m_callback;</div><div>    m_callback.clear();</div><div>    callback.cancel();</div><div>}</div></div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000102db4d80 in WebFrameLoaderClient::cancelPolicyCheck() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebKit/mac/WebCoreSupport/WebFrameLoaderClient.mm:924</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>void WebFrameLoaderClient::cancelPolicyCheck()</div><div>{</div><div>    [m_policyListener invalidate];</div><div>    m_policyListener = nullptr;</div><div>}</div></div></div><div><br/></div><div>
+<hr/></div><div><br/></div><div>★WebCore::FrameLoader::setPolicyDocumentLoader(WebCore::DocumentLoader*)</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#2    0x00000001073e7689 in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1448</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#1    0x00000001073dfba8 in WebCore::FrameLoader::setPolicyDocumentLoader(WebCore::DocumentLoader*) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1704</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>void FrameLoader::setPolicyDocumentLoader(DocumentLoader* loader)</div><div>{</div><div>    // this    WebCore::FrameLoader *    0x1161dfca0    0x00000001161dfca0</div><div>    // loader    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div><div>    // m_policyDocumentLoader    WTF::RefPtr&lt;WebCore::DocumentLoader&gt;  </div><div>    // 测试用例这里不是相同的 </div><div><div>    if (m_policyDocumentLoader == loader)</div><div>        return;</div><div><br/></div></div><div>    if (loader)</div><div>        // m_frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div><div>        // 看下这个函数，作用：将当前 loader 挂载至 frame，并且设置 DocumentWriter 的 frame</div><div><div>        loader-&gt;attachToFrame(m_frame);</div><div>    if (m_policyDocumentLoader</div><div>            &amp;&amp; m_policyDocumentLoader != m_provisionalDocumentLoader</div><div>            &amp;&amp; m_policyDocumentLoader != m_documentLoader)</div><div>        m_policyDocumentLoader-&gt;detachFromFrame();</div></div><div><br/></div><div>    // 最终设置 policyDocumentLoader</div><div>    m_policyDocumentLoader = loader;</div><div>}</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x000000010709c944 in WebCore::DocumentLoader::attachToFrame(WebCore::Frame&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:981</div></div><div><br/></div><div>WebDocumentLoaderMac 的 Debug 信息截图显示：</div><div><br/></div><div><img src="%E8%B5%84%E6%BA%90%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B1-3%20-%20HTML%20%E6%96%87%E6%A1%A3%E8%B5%84%E6%BA%90.resources/3562AB0F-A6A8-44BE-8A8A-ACC0C0D74E3A.png" height="auto" width="100%"/><br/></div><div><br/></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>void DocumentLoader::attachToFrame(Frame&amp; frame)</div><div>{</div><div>    // this    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div><div>    // frame    WebCore::MainFrame &amp;    0x00000001161dfc00</div><div>    // 如果已经被 attachToFrame 则不需再 attach</div><div><div>    if (m_frame == &amp;frame)</div><div>        return;</div><div><br/></div><div>    ASSERT(!m_frame);</div></div><div>    m_frame = &amp;frame;</div><div>    // m_writer    WebCore::DocumentWriter  </div><div>    // 摘：void setFrame(Frame* frame) { m_frame = frame; } </div><div>    m_writer.setFrame(&amp;frame);</div><div>    // 这个 attachToFrame 调用了 </div><div><div>    attachToFrame();</div><div><br/></div><div>#ifndef NDEBUG</div><div>    m_hasEverBeenAttached = true;</div><div>#endif</div></div><div>}</div></div><div><br/></div><div>attachToFrame() 则调起 Objective-C 层级的 WebDocumentLoaderMac 的 attachToFrame 方法，再回归至 DocumentLoader::attachToFrame()</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000102d8b910 in WebDocumentLoaderMac::attachToFrame() at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebKit/mac/WebView/WebDocumentLoaderMac.mm:79</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div><div>void WebDocumentLoaderMac::attachToFrame()</div><div>{</div><div>    DocumentLoader::attachToFrame();</div><div><br/></div><div>    retainDataSource();</div><div>}</div></div></div><div><br/></div><div>
+<hr/></div><div><br/></div><div>★NavigationAction::isEmpty()</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001073f9c50 in WebCore::NavigationAction::isEmpty() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/NavigationAction.h:58</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>bool isEmpty() const { return m_resourceRequest.url().isEmpty(); }</div><div>// this    const WebCore::NavigationAction *    0x116df38e0    0x0000000116df38e0</div><div>// m_resourceRequest    WebCore::ResourceRequest  </div><div>// 初次的 isEmpty() 返回 true </div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x0000000108836782 in WebCore::ResourceRequestBase::url() const at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/platform/network/ResourceRequestBase.cpp:124</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>const URL&amp; ResourceRequestBase::url() const<br/></div><div>{</div><div>    // this    const WebCore::ResourceRequestBase *    0x116df38e0    0x0000000116df38e0</div><div>    // m_url    WebCore::URL  </div><div>    // m_ptr    WTF::StringImpl *    NULL    0x0000000000000000 </div><div><div>    updateResourceRequest();</div><div><br/></div><div>    return m_url;</div><div>}</div></div></div><div><br/></div><div>
+<hr/></div><div><br/></div><div>★WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL)</div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0  0x00000001073e76fa in WebCore::FrameLoader::loadWithDocumentLoader(WebCore::DocumentLoader*, WebCore::FrameLoadType, WTF::PassRefPtr&lt;WebCore::FormState&gt;, WebCore::AllowNavigationToInvalidURL) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/FrameLoader.cpp:1450</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>#0    0x00000001070a0487 in WebCore::DocumentLoader::setTriggeringAction(WebCore::NavigationAction const&amp;) at /Users/mrguan/work/svn/Webkit/WebKit/Source/WebCore/loader/DocumentLoader.cpp:1662</div></div><div><br/></div><div style="-en-codeblock: true; box-sizing: border-box; padding: 8px; font-family: Monaco, Menlo, Consolas, &quot;Courier New&quot;, monospace; font-size: 12px; color: rgb(51, 51, 51); border-top-left-radius: 4px; border-top-right-radius: 4px; border-bottom-right-radius: 4px; border-bottom-left-radius: 4px; background-color: rgb(251, 250, 248); border: 1px solid rgba(0, 0, 0, 0.14902); background-position: initial initial; background-repeat: initial initial;"><div>// 给 DcoumentLoader 设置一个 NavigationAction -&gt; m_triggeringAction</div><div>void DocumentLoader::setTriggeringAction(const NavigationAction&amp; action)</div><div>{</div><div>    // this    WebDocumentLoaderMac *    0x116df3100    0x0000000116df3100</div><div>    // 入参：action    const WebCore::NavigationAction &amp;    0x00007fff5fbf8ff8</div><div>    // 肯定会有 m_frame 所以进入 第一分支</div><div><div>    m_triggeringAction = action.copyWithShouldOpenExternalURLsPolicy(m_frame ? shouldOpenExternalURLsPolicyToPropagate() : m_shouldOpenExternalURLsPolicy);</div><div>}</div></div></div><div><br/></div><div>接下节</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>

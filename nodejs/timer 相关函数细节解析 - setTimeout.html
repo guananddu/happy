@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-11-16 06:29:25 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-11-16 06:34:48 +0000"/><title>timer 相关函数细节解析 - setTimeout</title></head><body><style>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.10 (454267)"/><meta name="author" content="管伟"/><meta name="created" content="2016-11-16 06:29:25 +0000"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-12-24 07:00:47 +0000"/><title>timer 相关函数细节解析 - setTimeout</title></head><body><style>
     a { color: #43B0D6 !important; }
     a:visited { color: #7b7ed2 !important; }
     .title-p { font-size:12px; color:gray; }
@@ -13,11 +13,11 @@
 <p class="title-p">文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
 <hr class="title-hr"><div>setTimeout 的处理逻辑和 setInterval 一摸一样，唯一的区别就是：</div><div><br/></div><div>在 exports.setInterval 中：</div><div><pre style="background-color:#2b2b2b;color:#a9b7c6;font-family:'Menlo';font-size:13.5pt;">timer._onTimeout = wrapper<span style="color:#cc7832;">;<br/></span>timer._repeat = ontimeout<span style="color:#cc7832;">;</span>
 </pre>timer( new Timeout实例对象 )的 _onTimeout 指针指向了一个内部函数wrapper（此函数用来处理repeat逻辑），_repeat 则指向用户的回调函数；</div><div><br/></div><div>而在 exports.setTimeout 中：</div><div><pre style="background-color:#2b2b2b;color:#a9b7c6;font-family:'Menlo';font-size:13.5pt;">timer._onTimeout = ontimeout<span style="color:#cc7832;">;</span>
-</pre>timer 的 _onTimeout 就直接指向了 ontimeout 的用户回调；</div><div><br/></div><div>其他的处理细节基本上都是一样的。</div><div><hr/>setInterval 和 setTimeout 的清除逻辑则是激活 timer 的逆逻辑，不再赘述；</div><div><br/></div>
+</pre>timer 的 _onTimeout 就直接指向了 ontimeout 的用户回调；</div><div><br/></div><div>其他的处理细节基本上都是一样的。</div><div><br/></div><div><hr/><br/></div><div>setInterval 和 setTimeout 的清除逻辑则是激活 timer 的逆逻辑，不再赘述；</div><div><br/></div>
 
 <hr class="tail-hr">
 <div class="tail-licenses">
 <p>版权声明：自由转载-非商用-非衍生-保持署名(<a href="https://creativecommons.org/licenses/by-nc-nd/3.0/deed.zh">创意共享3.0许可证</a>)</p>
 <p>文章作者：Pooky (<a href="mailto:guananddu@icloud.com">guananddu@icloud.com</a>)</p>
-<p>更新日期：Thu Dec 22 2016 16:38:14 GMT+0800 (CST)</p>
+<p>更新日期：Sat Dec 24 2016 16:00:43 GMT+0800 (CST)</p>
 </div></body></html>
