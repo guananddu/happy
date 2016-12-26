@@ -7,6 +7,9 @@ console.log( 'buf1: ', buf1 );
 const buf2 = Buffer.alloc( 20, 1 );
 console.log( 'buf2: ', buf2 );
 
+const buf2a1 = Buffer.alloc( 20, 'He', 'utf8' );
+console.log( 'buf2a1: ', buf2a1 );
+
 // Creates an uninitialized buffer of length 20.
 // This is faster than calling Buffer.alloc() but the returned
 // Buffer instance might contain old data that needs to be
