@@ -8,8 +8,16 @@ const target = {
     webkit: path.resolve( __dirname, '../..', 'webkit' )
 };
 
-for ( let key in target ) {
-     handleIndex( key, target[ key ] );
+let cliTarget = process.argv[ 2 ];
+
+// 指定更新目标
+if ( cliTarget != undefined && target[ cliTarget ] ) {
+    handleIndex( cliTarget, target[ cliTarget ] );
+}
+else {
+    for ( let key in target ) {
+        handleIndex( key, target[ key ] );
+    }
 }
 
 function handleIndex( key, tpath ) {
@@ -58,7 +66,12 @@ function postIndex( key, listArr ) {
                 ].join( '\n' )
             )
             .replace(
-                /\[DATE\]/, ( new Date ).toString()
+                /<p>更新日期：(.*)?<\/p>/,
+                [
+                    '<p>更新日期：',
+                    ( new Date ).toString(),
+                    '</p>'
+                ].join( '' )
             )
     );
 
