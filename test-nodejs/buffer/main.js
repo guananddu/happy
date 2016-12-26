@@ -27,4 +27,4 @@ console.log( 'buf5: ', buf5 );
 
 // Creates a Buffer containing UTF-8 bytes.
 const buf6 = Buffer.from( '这是一个 buffer 测试这是一个 buffer 测试', 'utf8' );
-console.log( 'buf6: ', buf6 );
+console.log( 'buf6: ', buf6.toString() );
