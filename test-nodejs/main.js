@@ -15,4 +15,6 @@
 
 // require( './buffer/main' );
 
+require( './stream/stringDecoder' );
+
 require( './stream/main' );
