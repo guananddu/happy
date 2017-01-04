@@ -18,6 +18,10 @@ const readable = fs.createReadStream( filePath, {
 
 readable.setEncoding( 'utf8' );
 
+readable.on( 'open', () => {
+    console.log( `!readable: open event.` );
+} );
+
 readable.on( 'readable', () => {
     console.log( `!readable: readable event.` );
 } );
