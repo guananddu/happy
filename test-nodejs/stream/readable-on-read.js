@@ -4,13 +4,13 @@ const stream = require( 'stream' );
 
 const filePath = path.resolve( __dirname, 'bigfile.txt' );
 
-const readable = fs.createReadStream( filePath, {
-    highWaterMark: 20000
-} );
-
-readable.on( 'data', ( chunk ) => {
-    console.log( `readable on data: received ${chunk.length} bytes of data.` );
-} );
+// const readable = fs.createReadStream( filePath, {
+//     highWaterMark: 20000
+// } );
+//
+// readable.on( 'data', ( chunk ) => {
+//     console.log( `readable on data: received ${chunk.length} bytes of data.` );
+// } );
 
 //////////////
 
@@ -30,13 +30,13 @@ readable.on( 'data', ( chunk ) => {
 
 //////////////
 
-// const readable = fs.createReadStream( filePath, {
-//     highWaterMark: 20000
-// } );
-//
-// readable.on( 'readable', () => {
-//     var chunk;
-//     while ( null !== ( chunk = readable.read() ) ) {
-//         console.log( `Received ${chunk.length} bytes of data.` );
-//     }
-// } );
+const readable = fs.createReadStream( filePath, {
+    highWaterMark: 20000
+} );
+
+readable.on( 'readable', () => {
+    var chunk;
+    while ( null !== ( chunk = readable.read() ) ) {
+        console.log( `Received ${chunk.length} bytes of data.` );
+    }
+} );
