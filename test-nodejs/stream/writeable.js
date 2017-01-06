@@ -12,10 +12,6 @@ writeable.on( 'close', o => {
     console.log( 'close event!', o );
 } );
 
-writeable.on( 'drain', o => {
-    console.log( 'drain event!', o );
-} );
-
 writeable.on( 'finish', o => {
     console.log( 'finish event!', o );
 } );
