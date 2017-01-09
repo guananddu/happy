@@ -4,8 +4,23 @@ const stream = require( 'stream' );
 
 const filePath = path.resolve( __dirname, 'output.txt' );
 
+// 为了 debug，进入 fs.write 的回调函数
+const oldFsWrite = fs.write;
+fs.write = function () {
+    var cb = arguments[ 5 ];
+    arguments[ 5 ] = function ( er, bytes ) {
+        debugger;
+        cb( er, bytes );
+    };
+    oldFsWrite.apply( fs, arguments );
+};
+
 const writeable = fs.createWriteStream( filePath, {
     defaultEncoding: 'utf8'
+} );
+
+writeable.on( 'open', o => {
+    console.log( 'open event!', o );
 } );
 
 writeable.on( 'close', o => {
