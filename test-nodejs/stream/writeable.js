@@ -15,6 +15,18 @@ fs.write = function () {
     oldFsWrite.apply( fs, arguments );
 };
 
+// 为了跟踪 _writev 函数
+var _writevOld = fs.WriteStream.prototype._writev;
+fs.WriteStream.prototype._writev = function () {
+    var that = this;
+    var cb = arguments[ 1 ];
+    arguments[ 1 ] = function ( er, bytes ) {
+        debugger;
+        cb( er, bytes );
+    };
+    _writevOld.apply( that, arguments );
+};
+
 const writeable = fs.createWriteStream( filePath, {
     defaultEncoding: 'utf8'
 } );
