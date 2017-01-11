@@ -13,7 +13,7 @@ let onOld = Stream.prototype.on;
 Stream.prototype.on = function ( ev, fn ) {
     var that = this;
     var innerFn = function () {
-        // debugger;
+        debugger;
         fn.apply( that, arguments );
     }
     onOld.call( that, ev, innerFn );
