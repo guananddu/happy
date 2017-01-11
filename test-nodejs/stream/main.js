@@ -1,4 +1,6 @@
 // require( './readable' );
 // require( './readable-on-read' );
 
-require( './writeable' );
+// require( './writeable' );
+
+require( './pipe' );
