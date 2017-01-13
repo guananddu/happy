@@ -17,4 +17,6 @@
 
 // require( './stream/stringDecoder' );
 
-require( './stream/main' );
+// require( './stream/main' );
+
+require( './fs/main' );
